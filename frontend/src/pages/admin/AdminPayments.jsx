@@ -19,6 +19,7 @@ export default function AdminPayments() {
   const [payments, setPayments] = useState([]);
   const [totalRevenue, setTotalRevenue] = useState(0);
   const [totalCommission, setTotalCommission] = useState(0);
+  const [totalProfessionalEarnings, setTotalProfessionalEarnings] = useState(0);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("all");
   const [search, setSearch] = useState("");
@@ -41,6 +42,7 @@ export default function AdminPayments() {
       setPayments(res.data?.payments || []);
       setTotalRevenue(res.data?.totalRevenue || 0);
       setTotalCommission(res.data?.totalCommission || 0);
+      setTotalProfessionalEarnings(res.data?.totalProfessionalEarnings || 0);
     } catch {
       showToast("Failed to load payments", "error");
     } finally {
@@ -68,7 +70,7 @@ export default function AdminPayments() {
     setActionLoading(true);
     try {
       await httpClient.post(`/payment/refund/${selectedPayment._id}`);
-      showToast("Payment refunded successfully!");
+      showToast("Payment refunded successfully & Connect transfer reversed!");
       setRefundOpen(false);
       fetchPayments();
     } catch (err) {
@@ -87,7 +89,7 @@ export default function AdminPayments() {
       textColor: "text-emerald-800",
     },
     {
-      label: "Admin Commission (20%)",
+      label: "PoseFit Commission (20%)",
       value: `$${totalCommission.toFixed(2)}`,
       Icon: IconBuilding,
       bgGradient: "linear-gradient(135deg, #fefce8 0%, #ffffff 100%)",
@@ -95,15 +97,15 @@ export default function AdminPayments() {
       textColor: "text-amber-800",
     },
     {
-      label: "Total Transactions",
-      value: payments.length,
+      label: "Pro Earnings (80%)",
+      value: `$${totalProfessionalEarnings.toFixed(2)}`,
       Icon: IconTrendingUp,
       bgGradient: "linear-gradient(135deg, #f0f9ff 0%, #ffffff 100%)",
       borderColor: "#bae6fd",
       textColor: "text-sky-800",
     },
     {
-      label: "Completed",
+      label: "Successful Payments",
       value: payments.filter((p) => p.status === "completed").length,
       Icon: IconCheckCircle,
       bgGradient: "linear-gradient(135deg, #ecfdf5 0%, #ffffff 100%)",
@@ -129,10 +131,12 @@ export default function AdminPayments() {
         {/* Header */}
         <div className="px-8 pt-8 pb-4">
           <span className="text-xs font-extrabold uppercase tracking-widest px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
-            Payment Management
+            Platform Payments & Stripe Connect
           </span>
-          <h1 className="text-3xl font-black text-stone-800 tracking-tight mt-2">Payments</h1>
-          <p className="text-stone-500 font-medium text-sm mt-1">All Stripe transactions, revenue tracking, and refund management.</p>
+          <h1 className="text-3xl font-black text-stone-800 tracking-tight mt-2">Payments & Earnings</h1>
+          <p className="text-stone-500 font-medium text-sm mt-1">
+            Track transactions, 20% platform commissions, 80% professional Connect payouts, and issue refunds.
+          </p>
         </div>
 
         {/* Summary Cards */}
@@ -202,7 +206,7 @@ export default function AdminPayments() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="bg-stone-50 border-b border-stone-100">
-                      {["User", "Professional", "Amount", "Admin Cut", "Pro Amount", "Status", "Date", "Action"].map((h) => (
+                      {["User", "Professional", "Total Paid", "PoseFit 20%", "Pro 80%", "Payment Status", "Payout Status", "Action"].map((h) => (
                         <th key={h} className="text-left px-5 py-4 text-xs font-bold text-stone-500 uppercase tracking-wider whitespace-nowrap">{h}</th>
                       ))}
                     </tr>
@@ -225,7 +229,14 @@ export default function AdminPayments() {
                             <p className="font-bold text-stone-800 whitespace-nowrap">
                               {payment.professional ? `${payment.professional.firstName} ${payment.professional.lastName}` : "—"}
                             </p>
-                            <p className="text-xs text-stone-400 font-medium">{payment.professional?.email}</p>
+                            <p className="text-xs text-stone-400 font-medium">
+                              {payment.professional?.email}
+                              {payment.professional?.maskedBank && (
+                                <span className="block text-[11px] text-stone-500 font-semibold mt-0.5">
+                                  Bank: {payment.professional.maskedBank}
+                                </span>
+                              )}
+                            </p>
                           </div>
                         </td>
                         {/* Amount */}
@@ -242,22 +253,26 @@ export default function AdminPayments() {
                           ${payment.professionalAmount?.toFixed(2)}
                         </td>
                         {/* Status */}
-                        <td className="px-5 py-4">
+                        <td className="px-5 py-4 whitespace-nowrap">
                           <StatusBadge status={payment.status} />
                         </td>
-                        {/* Date */}
-                        <td className="px-5 py-4 text-stone-500 text-xs font-medium whitespace-nowrap">
-                          {payment.paidAt
-                            ? new Date(payment.paidAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
-                            : new Date(payment.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                          {payment.refundedAt && (
-                            <p className="text-sky-600 font-bold mt-0.5">
-                              Refunded: {new Date(payment.refundedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                            </p>
-                          )}
+                        {/* Payout Status */}
+                        <td className="px-5 py-4 whitespace-nowrap">
+                          <span
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold border ${
+                              payment.status === "completed"
+                                ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                                : payment.status === "refunded"
+                                ? "bg-sky-50 text-sky-800 border-sky-200"
+                                : "bg-stone-100 text-stone-600 border-stone-200"
+                            }`}
+                          >
+                            <span className="w-1.5 h-1.5 rounded-full bg-current" />
+                            {payment.status === "completed" ? "Transferred to Connect" : payment.status === "refunded" ? "Reversed" : "Pending"}
+                          </span>
                         </td>
                         {/* Action */}
-                        <td className="px-5 py-4">
+                        <td className="px-5 py-4 whitespace-nowrap">
                           {payment.status === "completed" ? (
                             <button
                               onClick={() => { setSelectedPayment(payment); setRefundOpen(true); }}
@@ -289,7 +304,7 @@ export default function AdminPayments() {
               <IconRotateCcw className="w-6 h-6" />
             </div>
             <div>
-              <p className="text-stone-800 font-extrabold text-lg">Confirm Refund</p>
+              <p className="text-stone-800 font-extrabold text-lg">Confirm Stripe Refund</p>
               <p className="text-stone-500 text-xs mt-1 font-medium">
                 Issue a full Stripe refund of{" "}
                 <span className="font-extrabold text-stone-800">${selectedPayment?.amount?.toFixed(2)}</span>{" "}
@@ -298,7 +313,9 @@ export default function AdminPayments() {
             </div>
             <div className="bg-amber-50 rounded-2xl p-3.5 border border-amber-200 text-left flex items-start gap-2">
               <IconAlertTriangle className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
-              <p className="text-xs text-amber-800 font-bold">This action cannot be undone. The refund will be processed through Stripe immediately.</p>
+              <p className="text-xs text-amber-800 font-bold">
+                This will automatically reverse the 80% Connect transfer from the professional and refund the 20% platform fee.
+              </p>
             </div>
             <div className="flex gap-3">
               <button

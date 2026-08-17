@@ -1,5 +1,6 @@
 const Stripe = require("stripe");
 const PaymentModel = require("../../models/paymentModel");
+const UserModel = require("../../models/userModel");
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -32,6 +33,50 @@ const createPayment = async (req, res) => {
       });
     }
 
+    // Fetch Professional & Verify Eligibility
+    const professional = await UserModel.findOne({
+      _id: professionalId,
+      role: "PROFESSIONAL",
+    });
+
+    if (!professional) {
+      return res.status(404).json({
+        success: false,
+        message: "Professional not found",
+      });
+    }
+
+    // Verify Professional Stripe Connect Account & Payout Status
+    if (!professional.stripeAccountId) {
+      return res.status(400).json({
+        success: false,
+        message: "Professional payout account is not connected or payouts are not enabled.",
+      });
+    }
+
+    // Verify status live with Stripe
+    let payoutsEnabled = professional.payoutsEnabled;
+    try {
+      const account = await stripe.accounts.retrieve(professional.stripeAccountId);
+      payoutsEnabled = !!account.payouts_enabled;
+
+      // Update cached values in DB
+      professional.payoutsEnabled = payoutsEnabled;
+      professional.chargesEnabled = !!account.charges_enabled;
+      professional.stripeAccountStatus = account.charges_enabled && payoutsEnabled ? "active" : "pending";
+      await professional.save();
+    } catch (acctErr) {
+      console.error("Error retrieving Stripe Connect account:", acctErr);
+    }
+
+    if (!payoutsEnabled) {
+      return res.status(400).json({
+        success: false,
+        message: "Professional payout account is not connected or payouts are not enabled.",
+      });
+    }
+
+    // 20% PoseFit Admin Commission / 80% Professional Share
     const adminCommission = Number((totalAmount * 0.2).toFixed(2));
     const professionalAmount = Number((totalAmount * 0.8).toFixed(2));
 
@@ -43,8 +88,12 @@ const createPayment = async (req, res) => {
       professionalAmount,
       currency: "usd",
       status: "pending",
+      payoutStatus: "pending",
     });
 
+    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+
+    // Create Stripe Checkout Session with Direct Connect Transfer Split
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
 
@@ -53,7 +102,7 @@ const createPayment = async (req, res) => {
           price_data: {
             currency: "usd",
             product_data: {
-              name: "PoseFit Professional Service",
+              name: `PoseFit Session with ${professional.firstName} ${professional.lastName}`,
             },
             unit_amount: Math.round(totalAmount * 100),
           },
@@ -61,14 +110,27 @@ const createPayment = async (req, res) => {
         },
       ],
 
+      // Payment Split: 20% stays on Admin Platform, 80% transferred to Professional's Connected Account
+      payment_intent_data: {
+        application_fee_amount: Math.round(adminCommission * 100),
+        transfer_data: {
+          destination: professional.stripeAccountId,
+        },
+        metadata: {
+          paymentId: payment._id.toString(),
+          professionalId: professionalId.toString(),
+          userId: userId.toString(),
+        },
+      },
+
       metadata: {
         paymentId: payment._id.toString(),
         professionalId: professionalId.toString(),
         userId: userId.toString(),
       },
 
-      success_url: `${process.env.FRONTEND_URL}/payment-success`,
-      cancel_url: `${process.env.FRONTEND_URL}/payment-cancelled`,
+      success_url: `${frontendUrl}/payment-success`,
+      cancel_url: `${frontendUrl}/payment-cancelled`,
     });
 
     payment.stripeSessionId = session.id;
@@ -87,6 +149,7 @@ const createPayment = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Unable to create payment",
+      error: error.message,
     });
   }
 };
@@ -95,7 +158,7 @@ const getPayment = async (req, res) => {
   try {
     const payment = await PaymentModel.findById(req.params.id)
       .populate("user", "firstName lastName email")
-      .populate("professional", "firstName lastName email");
+      .populate("professional", "firstName lastName email stripeAccountId stripeAccountStatus payoutsEnabled maskedBank");
 
     if (!payment) {
       return res.status(404).json({

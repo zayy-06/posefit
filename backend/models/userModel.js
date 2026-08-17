@@ -81,7 +81,35 @@ const UserSchema = new Schema(
       },
     ],
 
-    // SENSITIVE DATA - Accessible ONLY by ADMIN or the Professional themselves
+    // Stripe Connect Non-Sensitive Information
+    stripeAccountId: {
+      type: String,
+      trim: true,
+    },
+
+    stripeAccountStatus: {
+      type: String,
+      enum: ["unconnected", "pending", "active", "restricted"],
+      default: "unconnected",
+    },
+
+    chargesEnabled: {
+      type: Boolean,
+      default: false,
+    },
+
+    payoutsEnabled: {
+      type: Boolean,
+      default: false,
+    },
+
+    maskedBank: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    // Optional legacy bankDetails placeholder (never stored raw)
     bankDetails: {
       accountHolderName: { type: String, trim: true },
       bankName: { type: String, trim: true },

@@ -17,7 +17,6 @@ const { getProfessionals } = require("../../controllers/admin/getProfessionalsCo
 const addProfessional = require("../../controllers/admin/addProfessionalController");
 const deleteProfessional = require("../../controllers/admin/deleteProfessionalController");
 const analytics = require("../../controllers/admin/analyticsController");
-const addUser = require("../../controllers/admin/addUserController");
 const changeAdminPassword = require("../../controllers/admin/changePasswordController");
 
 const router = express.Router();
@@ -31,7 +30,7 @@ router.get("/get-professionals", authMiddleware, adminMiddleware, getProfessiona
 router.post("/add-professional", authMiddleware, adminMiddleware, addProfessional);
 router.delete("/delete-professional/:id", authMiddleware, adminMiddleware, deleteProfessional);
 router.get("/analytics", authMiddleware, adminMiddleware, analytics);
-router.post("/add-user", authMiddleware, adminMiddleware, addUser);
+
 router.get("/professional-requests", authMiddleware, adminMiddleware, getPendingProfessionals);
 router.put("/professional-status/:id", authMiddleware, adminMiddleware, updateProfessionalStatus);
 router.put("/change-password", authMiddleware, adminMiddleware, changeAdminPassword);

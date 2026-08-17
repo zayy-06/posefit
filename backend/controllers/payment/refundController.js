@@ -30,25 +30,30 @@ const refundPayment = async (req, res) => {
       });
     }
 
-    await stripe.refunds.create({
+    // Process Stripe Connect Refund with Transfer Reversal
+    const refund = await stripe.refunds.create({
       payment_intent: payment.stripePaymentIntentId,
+      reverse_transfer: true,
+      refund_application_fee: true,
     });
 
     payment.status = "refunded";
+    payment.payoutStatus = "failed"; // Or reversed
     payment.refundedAt = new Date();
 
     await payment.save();
 
     return res.status(200).json({
       success: true,
-      message: "Payment refunded successfully",
+      message: "Payment refunded successfully and connected transfer reversed",
+      refundId: refund.id,
     });
   } catch (error) {
     console.error("Refund payment error:", error);
 
     return res.status(500).json({
       success: false,
-      message: "Unable to refund payment",
+      message: error.message || "Unable to refund payment",
     });
   }
 };

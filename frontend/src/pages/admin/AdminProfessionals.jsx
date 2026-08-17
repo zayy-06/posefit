@@ -7,6 +7,7 @@ import {
   IconSearch,
   IconPlus,
   IconTrash,
+  IconCheckCircle,
 } from "../../components/admin/Icons";
 
 const EMPTY_FORM = {
@@ -113,7 +114,7 @@ export default function AdminProfessionals() {
               Professionals Directory
             </span>
             <h1 className="text-3xl font-black text-stone-800 tracking-tight mt-2">Professionals</h1>
-            <p className="text-stone-500 font-medium text-sm mt-1">Onboard and manage certified Trainers and Nutritionists.</p>
+            <p className="text-stone-500 font-medium text-sm mt-1">Onboard and manage certified Trainers, Nutritionists, and Stripe Payout accounts.</p>
           </div>
           <button
             id="add-professional-btn"
@@ -133,7 +134,7 @@ export default function AdminProfessionals() {
             { label: "Invited", value: professionals.filter(p => p.professionalStatus === "invited" || p.professionalStatus === "INVITED").length, bg: "bg-blue-50/70", border: "border-blue-200/80", textColor: "text-blue-800" },
             { label: "Pending Verification", value: professionals.filter(p => p.professionalStatus === "pending_verification" || p.professionalStatus === "PENDING_VERIFICATION" || p.professionalStatus === "PENDING").length, bg: "bg-amber-50/70", border: "border-amber-200/80", textColor: "text-amber-800" },
             { label: "Approved & Live", value: professionals.filter(p => p.professionalStatus === "approved" || p.professionalStatus === "APPROVED").length, bg: "bg-emerald-50/70", border: "border-emerald-200/80", textColor: "text-emerald-800" },
-            { label: "Rejected", value: professionals.filter(p => p.professionalStatus === "rejected" || p.professionalStatus === "REJECTED").length, bg: "bg-rose-50/70", border: "border-rose-200/80", textColor: "text-rose-800" },
+            { label: "Stripe Connected", value: professionals.filter(p => p.stripeAccountId && p.payoutsEnabled).length, bg: "bg-sky-50/70", border: "border-sky-200/80", textColor: "text-sky-800" },
           ].map(({ label, value, bg, border, textColor }) => (
             <div key={label} className={`rounded-2xl px-4 py-3 border shadow-xs flex items-center justify-between ${bg} ${border}`}>
               <span className="text-[11px] font-bold text-stone-500 uppercase tracking-wider">{label}</span>
@@ -174,7 +175,7 @@ export default function AdminProfessionals() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="bg-stone-50 border-b border-stone-100">
-                      {["Name", "Email", "Role", "Specialization", "Session Fee", "Status", "Actions"].map((h) => (
+                      {["Name", "Email", "Role", "Specialization", "Session Fee", "Status", "Stripe Payouts", "Actions"].map((h) => (
                         <th key={h} className="text-left px-5 py-4 text-xs font-bold text-stone-500 uppercase tracking-wider whitespace-nowrap">{h}</th>
                       ))}
                     </tr>
@@ -205,6 +206,24 @@ export default function AdminProfessionals() {
                         </td>
                         <td className="px-5 py-4">
                           <StatusBadge status={pro.professionalStatus || "invited"} />
+                        </td>
+                        <td className="px-5 py-4 whitespace-nowrap">
+                          {pro.stripeAccountId ? (
+                            <div>
+                              <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold border ${pro.payoutsEnabled ? "bg-emerald-50 text-emerald-800 border-emerald-200" : "bg-amber-50 text-amber-800 border-amber-200"}`}>
+                                {pro.payoutsEnabled ? "Connected & Enabled" : "Pending Setup"}
+                              </span>
+                              {pro.maskedBank && (
+                                <p className="text-[11px] text-stone-500 font-semibold mt-0.5">
+                                  Bank: {pro.maskedBank}
+                                </p>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-stone-100 text-stone-600 border border-stone-200">
+                              Not Connected
+                            </span>
+                          )}
                         </td>
                         <td className="px-5 py-4">
                           <button

@@ -49,9 +49,20 @@ const paymentSchema = new mongoose.Schema(
       sparse: true,
     },
 
+    stripeTransferId: {
+      type: String,
+      sparse: true,
+    },
+
     status: {
       type: String,
       enum: ["pending", "completed", "failed", "refunded", "cancelled"],
+      default: "pending",
+    },
+
+    payoutStatus: {
+      type: String,
+      enum: ["pending", "transferred", "paid", "failed"],
       default: "pending",
     },
 

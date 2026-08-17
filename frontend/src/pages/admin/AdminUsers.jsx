@@ -5,13 +5,11 @@ import StatusBadge from "../../components/admin/StatusBadge";
 import { httpClient } from "../../lib/http";
 import {
   IconSearch,
-  IconPlus,
   IconEdit,
   IconTrash,
   IconLock,
 } from "../../components/admin/Icons";
 
-const EMPTY_FORM = { firstName: "", lastName: "", email: "", password: "" };
 const EMPTY_EDIT = { firstName: "", lastName: "", email: "" };
 
 export default function AdminUsers() {
@@ -20,17 +18,12 @@ export default function AdminUsers() {
   const [search, setSearch] = useState("");
 
   // Modals
-  const [addOpen, setAddOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
 
-  // Forms
-  const [addForm, setAddForm] = useState(EMPTY_FORM);
+  // Form & Feedback
   const [editForm, setEditForm] = useState(EMPTY_EDIT);
-
-  // Feedback
-  const [addError, setAddError] = useState("");
   const [editError, setEditError] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
   const [toast, setToast] = useState(null);
@@ -62,24 +55,6 @@ export default function AdminUsers() {
       u.email?.toLowerCase().includes(q)
     );
   });
-
-  /* ---- ADD USER ---- */
-  const handleAdd = async (e) => {
-    e.preventDefault();
-    if (!addForm.firstName || !addForm.lastName || !addForm.email || !addForm.password) {
-      setAddError("All fields are required."); return;
-    }
-    setActionLoading(true); setAddError("");
-    try {
-      await httpClient.post("/admin/add-user", addForm);
-      showToast("User added successfully!");
-      setAddOpen(false);
-      setAddForm(EMPTY_FORM);
-      fetchUsers();
-    } catch (err) {
-      setAddError(err?.response?.data?.message || "Failed to add user.");
-    } finally { setActionLoading(false); }
-  };
 
   /* ---- EDIT USER ---- */
   const openEdit = (user) => {
@@ -139,20 +114,11 @@ export default function AdminUsers() {
         <div className="px-8 pt-8 pb-4 flex items-center justify-between flex-wrap gap-4">
           <div>
             <span className="text-xs font-extrabold uppercase tracking-widest px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
-              User Management
+              User Directory
             </span>
             <h1 className="text-3xl font-black text-stone-800 tracking-tight mt-2">Users</h1>
-            <p className="text-stone-500 font-medium text-sm mt-1">Manage all registered users on the platform.</p>
+            <p className="text-stone-500 font-medium text-sm mt-1">View, search, edit, and manage registered users on the platform.</p>
           </div>
-          <button
-            id="add-user-btn"
-            onClick={() => { setAddForm(EMPTY_FORM); setAddError(""); setAddOpen(true); }}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-2xl font-bold text-white text-sm shadow-sm hover:opacity-95 active:scale-95 transition-all"
-            style={{ background: "linear-gradient(135deg, #10b981 0%, #059669 100%)" }}
-          >
-            <IconPlus className="w-4 h-4" />
-            <span>Add User</span>
-          </button>
         </div>
 
         {/* Search */}
@@ -246,61 +212,6 @@ export default function AdminUsers() {
             Showing {filtered.length} of {users.length} users
           </p>
         </div>
-
-        {/* ADD MODAL */}
-        <Modal isOpen={addOpen} onClose={() => setAddOpen(false)} title="Add New User">
-          <form onSubmit={handleAdd} className="space-y-4">
-            {addError && <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold">{addError}</div>}
-            <div className="grid grid-cols-2 gap-3">
-              {[["firstName", "First Name"], ["lastName", "Last Name"]].map(([k, l]) => (
-                <div key={k}>
-                  <label className="block text-xs font-bold text-stone-600 mb-1.5 uppercase tracking-wider">{l}</label>
-                  <input
-                    type="text"
-                    value={addForm[k]}
-                    onChange={(e) => setAddForm((p) => ({ ...p, [k]: e.target.value }))}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 text-sm outline-none focus:ring-2 focus:ring-emerald-300 font-medium"
-                  />
-                </div>
-              ))}
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-stone-600 mb-1.5 uppercase tracking-wider">Email</label>
-              <input
-                type="email"
-                value={addForm.email}
-                onChange={(e) => setAddForm((p) => ({ ...p, email: e.target.value }))}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 text-sm outline-none focus:ring-2 focus:ring-emerald-300 font-medium"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-stone-600 mb-1.5 uppercase tracking-wider">Password</label>
-              <input
-                type="password"
-                value={addForm.password}
-                onChange={(e) => setAddForm((p) => ({ ...p, password: e.target.value }))}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 text-sm outline-none focus:ring-2 focus:ring-emerald-300 font-medium"
-              />
-            </div>
-            <div className="flex gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => setAddOpen(false)}
-                className="flex-1 py-2.5 rounded-xl border border-stone-200 text-sm font-semibold text-stone-600 hover:bg-stone-50 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={actionLoading}
-                className="flex-1 py-2.5 rounded-xl text-white text-sm font-bold shadow-xs hover:opacity-90 disabled:opacity-60 transition-all"
-                style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}
-              >
-                {actionLoading ? "Adding…" : "Add User"}
-              </button>
-            </div>
-          </form>
-        </Modal>
 
         {/* EDIT MODAL (EMAIL DISABLED FOR ADMINS) */}
         <Modal isOpen={editOpen} onClose={() => setEditOpen(false)} title="Edit User">

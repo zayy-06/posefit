@@ -106,7 +106,7 @@ export default function AdminProfessionalRequests() {
           </span>
           <h1 className="text-3xl font-black text-stone-800 tracking-tight mt-2">Pending Applications Review</h1>
           <p className="text-stone-500 font-medium text-sm mt-1">
-            Review submitted profile details, credential documents, availability, and bank details to Approve or Reject.
+            Review submitted profile details, credential documents, availability, and Stripe Connect status to Approve or Reject.
           </p>
         </div>
 
@@ -293,35 +293,39 @@ export default function AdminProfessionalRequests() {
                 )}
               </div>
 
-              {/* Bank Details (Confidential for Admin) */}
+              {/* Stripe Connect Account Status (Secured & Non-sensitive) */}
               <div className="bg-amber-50/70 p-4 rounded-2xl border border-amber-200/80">
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-xs font-bold text-amber-900 uppercase tracking-wider flex items-center gap-1.5">
-                    <IconLock className="w-3.5 h-3.5" /> Bank Account Details (Admin Confidential)
+                    <IconLock className="w-3.5 h-3.5" /> Stripe Connect Payout Account (Secured)
                   </p>
                 </div>
-                {detailPro.bankDetails && (detailPro.bankDetails.accountNumber || detailPro.bankDetails.iban) ? (
-                  <div className="grid grid-cols-2 gap-2.5 text-xs">
-                    <div>
-                      <span className="text-stone-500 font-medium">Holder Name:</span>{" "}
-                      <span className="font-bold text-stone-800">{detailPro.bankDetails.accountHolderName || "—"}</span>
-                    </div>
-                    <div>
-                      <span className="text-stone-500 font-medium">Bank Name:</span>{" "}
-                      <span className="font-bold text-stone-800">{detailPro.bankDetails.bankName || "—"}</span>
-                    </div>
-                    <div>
-                      <span className="text-stone-500 font-medium">Account / IBAN:</span>{" "}
-                      <span className="font-bold text-stone-800">{detailPro.bankDetails.iban || detailPro.bankDetails.accountNumber || "—"}</span>
-                    </div>
-                    <div>
-                      <span className="text-stone-500 font-medium">Routing / SWIFT:</span>{" "}
-                      <span className="font-bold text-stone-800">{detailPro.bankDetails.swiftCode || detailPro.bankDetails.routingNumber || "—"}</span>
-                    </div>
+                <div className="grid grid-cols-2 gap-2.5 text-xs">
+                  <div>
+                    <span className="text-stone-500 font-medium">Stripe Account:</span>{" "}
+                    <span className="font-bold text-stone-800">
+                      {detailPro.stripeAccountId ? "Connected" : "Not Connected"}
+                    </span>
                   </div>
-                ) : (
-                  <p className="text-xs text-stone-500 font-medium">No bank details submitted.</p>
-                )}
+                  <div>
+                    <span className="text-stone-500 font-medium">Payout Status:</span>{" "}
+                    <span className="font-bold text-stone-800">
+                      {detailPro.payoutsEnabled ? "Enabled" : "Disabled / Pending Setup"}
+                    </span>
+                  </div>
+                  {detailPro.maskedBank && (
+                    <div>
+                      <span className="text-stone-500 font-medium">Bank Account:</span>{" "}
+                      <span className="font-bold text-stone-800">{detailPro.maskedBank}</span>
+                    </div>
+                  )}
+                  <div>
+                    <span className="text-stone-500 font-medium">Account Status:</span>{" "}
+                    <span className="font-bold text-stone-800 capitalize">
+                      {detailPro.stripeAccountStatus || "unconnected"}
+                    </span>
+                  </div>
+                </div>
               </div>
 
               {/* Modal Decision Actions */}
