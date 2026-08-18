@@ -1,11 +1,15 @@
+const dotenv = require("dotenv");
+dotenv.config();
+
 const Stripe = require("stripe");
 const PaymentModel = require("../../models/paymentModel");
 const UserModel = require("../../models/userModel");
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+const getStripe = () => new Stripe(process.env.STRIPE_SECRET_KEY);
 
 const stripeWebhook = async (req, res) => {
   const signature = req.headers["stripe-signature"];
+  const stripe = getStripe();
 
   let event;
 
@@ -57,14 +61,22 @@ const stripeWebhook = async (req, res) => {
     }
 
     // 3. Stripe Connect Account Updated (Onboarding / Payout Capability Changes)
-    if (event.type === "account.updated") {
+    if (event.type === "account.updated" || event.type?.startsWith("v2.core.account")) {
       const account = event.data.object;
 
       const user = await UserModel.findOne({ stripeAccountId: account.id });
       if (user) {
-        const chargesEnabled = !!account.charges_enabled;
-        const payoutsEnabled = !!account.payouts_enabled;
-        const status = chargesEnabled && payoutsEnabled ? "active" : "pending";
+        let chargesEnabled = !!account.charges_enabled;
+        let payoutsEnabled = !!account.payouts_enabled;
+
+        // Check V2 configurations if present
+        if (account.configuration?.recipient?.capabilities?.stripe_balance) {
+          const recipientCaps = account.configuration.recipient.capabilities.stripe_balance;
+          chargesEnabled = recipientCaps.stripe_transfers?.status === "active";
+          payoutsEnabled = recipientCaps.payouts?.status === "active" || recipientCaps.stripe_transfers?.status === "active";
+        }
+
+        const status = payoutsEnabled ? "active" : "pending";
 
         let maskedBank = user.maskedBank || "";
         if (account.external_accounts && account.external_accounts.data && account.external_accounts.data.length > 0) {

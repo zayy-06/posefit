@@ -12,6 +12,7 @@ const {
 
 const {
   getPublicProfessionals,
+  getPublicProfessionalById,
 } = require("../../controllers/admin/getProfessionalsController");
 
 const router = express.Router();
@@ -23,5 +24,6 @@ router.post("/forgot-password", forgotPassword);
 router.put("/reset-password", resetPassword);
 router.put("/complete-professional-profile", authMiddleware, completeProfessionalProfile);
 router.get("/public-professionals", getPublicProfessionals);
+router.get("/public-professionals/:id", getPublicProfessionalById);
 
 module.exports = router;

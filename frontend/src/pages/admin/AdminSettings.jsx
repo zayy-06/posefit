@@ -224,7 +224,7 @@ export default function AdminSettings() {
                       className="w-full py-3 rounded-xl text-white font-bold text-sm shadow-xs hover:opacity-90 disabled:opacity-60 transition-all"
                       style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}
                     >
-                      {loadingPass ? "Updating Password…" : "Update Admin Password"}
+                      {loadingPass ? "Updating Password..." : "Update Admin Password"}
                     </button>
                   </form>
 

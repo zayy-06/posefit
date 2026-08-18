@@ -29,7 +29,7 @@ const getPublicProfessionals = async (req, res) => {
       role: "PROFESSIONAL",
       professionalStatus: { $in: ["approved", "APPROVED"] },
     }).select(
-      "firstName lastName email profilePhoto bio specialization professionalType sessionFee availability professionalStatus isVerified"
+      "firstName lastName email profilePhoto bio specialization professionalType sessionFee availability rating professionalStatus isVerified"
     );
 
     return res.status(200).json({
@@ -47,7 +47,42 @@ const getPublicProfessionals = async (req, res) => {
   }
 };
 
+// Public endpoint for fetching single approved professional details
+const getPublicProfessionalById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const professional = await UserModel.findOne({
+      _id: id,
+      role: "PROFESSIONAL",
+      professionalStatus: { $in: ["approved", "APPROVED"] },
+    }).select(
+      "firstName lastName email profilePhoto bio specialization professionalType sessionFee availability rating professionalStatus isVerified"
+    );
+
+    if (!professional) {
+      return res.status(404).json({
+        success: false,
+        message: "Approved professional not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      professional,
+    });
+  } catch (error) {
+    console.error("Error fetching public professional by id:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error while fetching professional details",
+    });
+  }
+};
+
 module.exports = {
   getProfessionals,
   getPublicProfessionals,
+  getPublicProfessionalById,
 };

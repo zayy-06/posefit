@@ -30,7 +30,6 @@ router.get("/get-professionals", authMiddleware, adminMiddleware, getProfessiona
 router.post("/add-professional", authMiddleware, adminMiddleware, addProfessional);
 router.delete("/delete-professional/:id", authMiddleware, adminMiddleware, deleteProfessional);
 router.get("/analytics", authMiddleware, adminMiddleware, analytics);
-
 router.get("/professional-requests", authMiddleware, adminMiddleware, getPendingProfessionals);
 router.put("/professional-status/:id", authMiddleware, adminMiddleware, updateProfessionalStatus);
 router.put("/change-password", authMiddleware, adminMiddleware, changeAdminPassword);

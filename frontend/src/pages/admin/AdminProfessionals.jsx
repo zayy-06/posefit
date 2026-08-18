@@ -340,7 +340,7 @@ export default function AdminProfessionals() {
                 className="flex-1 py-2.5 rounded-xl text-white text-sm font-bold shadow-xs hover:opacity-90 disabled:opacity-60 transition-all"
                 style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}
               >
-                {actionLoading ? "Sending Invitation…" : "Invite & Create Account"}
+                {actionLoading ? "Sending Invitation..." : "Invite & Create Account"}
               </button>
             </div>
           </form>
@@ -366,7 +366,7 @@ export default function AdminProfessionals() {
                 disabled={actionLoading}
                 className="flex-1 py-2.5 rounded-xl bg-rose-500 text-white text-sm font-bold hover:bg-rose-600 disabled:opacity-60 shadow-xs"
               >
-                {actionLoading ? "Removing…" : "Confirm Delete"}
+                {actionLoading ? "Removing..." : "Confirm Delete"}
               </button>
             </div>
           </div>

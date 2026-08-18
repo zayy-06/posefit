@@ -182,7 +182,7 @@ export default function AdminPayments() {
             </span>
             <input
               type="text"
-              placeholder="Search user, professional…"
+              placeholder="Search user, professional..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-10 pr-4 py-2.5 rounded-2xl border border-stone-200 bg-white text-sm outline-none focus:ring-2 focus:ring-emerald-300 text-stone-700 font-medium w-72 shadow-xs"
@@ -218,7 +218,7 @@ export default function AdminPayments() {
                         <td className="px-5 py-4">
                           <div>
                             <p className="font-bold text-stone-800 whitespace-nowrap">
-                              {payment.user ? `${payment.user.firstName} ${payment.user.lastName}` : "—"}
+                              {payment.user ? `${payment.user.firstName} ${payment.user.lastName}` : "-"}
                             </p>
                             <p className="text-xs text-stone-400 font-medium">{payment.user?.email}</p>
                           </div>
@@ -227,7 +227,7 @@ export default function AdminPayments() {
                         <td className="px-5 py-4">
                           <div>
                             <p className="font-bold text-stone-800 whitespace-nowrap">
-                              {payment.professional ? `${payment.professional.firstName} ${payment.professional.lastName}` : "—"}
+                              {payment.professional ? `${payment.professional.firstName} ${payment.professional.lastName}` : "-"}
                             </p>
                             <p className="text-xs text-stone-400 font-medium">
                               {payment.professional?.email}
@@ -282,7 +282,7 @@ export default function AdminPayments() {
                               <span>Refund</span>
                             </button>
                           ) : (
-                            <span className="text-xs text-stone-300 font-medium">—</span>
+                            <span className="text-xs text-stone-300 font-medium">-</span>
                           )}
                         </td>
                       </tr>
@@ -329,7 +329,7 @@ export default function AdminPayments() {
                 disabled={actionLoading}
                 className="flex-1 py-2.5 rounded-xl bg-sky-600 text-white text-sm font-bold hover:bg-sky-700 disabled:opacity-60 transition-colors shadow-xs"
               >
-                {actionLoading ? "Processing…" : "Confirm Refund"}
+                {actionLoading ? "Processing..." : "Confirm Refund"}
               </button>
             </div>
           </div>

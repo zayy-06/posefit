@@ -37,6 +37,26 @@ const paymentSchema = new mongoose.Schema(
       default: "usd",
     },
 
+    // Appointment Schedule Details
+    appointmentDay: {
+      type: String,
+      trim: true,
+    },
+
+    appointmentSlot: {
+      type: String,
+      trim: true,
+    },
+
+    appointmentDate: {
+      type: Date,
+    },
+
+    notes: {
+      type: String,
+      trim: true,
+    },
+
     stripePaymentIntentId: {
       type: String,
       unique: true,

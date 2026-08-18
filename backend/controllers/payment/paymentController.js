@@ -1,12 +1,23 @@
+const dotenv = require("dotenv");
+dotenv.config();
+
 const Stripe = require("stripe");
 const PaymentModel = require("../../models/paymentModel");
 const UserModel = require("../../models/userModel");
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+const getStripe = () => new Stripe(process.env.STRIPE_SECRET_KEY);
 
 const createPayment = async (req, res) => {
   try {
-    const { professionalId, amount } = req.body;
+    const stripe = getStripe();
+    const {
+      professionalId,
+      amount,
+      appointmentDay,
+      appointmentSlot,
+      appointmentDate,
+      notes,
+    } = req.body;
 
     if (!professionalId || !amount) {
       return res.status(400).json({
@@ -54,16 +65,32 @@ const createPayment = async (req, res) => {
       });
     }
 
-    // Verify status live with Stripe
+    // Verify status live with Stripe (Accounts V2)
     let payoutsEnabled = professional.payoutsEnabled;
     try {
-      const account = await stripe.accounts.retrieve(professional.stripeAccountId);
-      payoutsEnabled = !!account.payouts_enabled;
+      let v2Account;
+      try {
+        v2Account = await stripe.v2.core.accounts.retrieve(professional.stripeAccountId, {
+          include: ["configuration.recipient"],
+        });
+      } catch {
+        v2Account = null;
+      }
+
+      if (v2Account) {
+        const recipientCaps = v2Account.configuration?.recipient?.capabilities?.stripe_balance;
+        const transfersActive = recipientCaps?.stripe_transfers?.status === "active";
+        const payoutsActive = recipientCaps?.payouts?.status === "active";
+        payoutsEnabled = transfersActive || payoutsActive || professional.payoutsEnabled;
+      } else {
+        const account = await stripe.accounts.retrieve(professional.stripeAccountId);
+        payoutsEnabled = !!account.payouts_enabled || !!account.charges_enabled;
+      }
 
       // Update cached values in DB
       professional.payoutsEnabled = payoutsEnabled;
-      professional.chargesEnabled = !!account.charges_enabled;
-      professional.stripeAccountStatus = account.charges_enabled && payoutsEnabled ? "active" : "pending";
+      professional.chargesEnabled = payoutsEnabled;
+      professional.stripeAccountStatus = payoutsEnabled ? "active" : "pending";
       await professional.save();
     } catch (acctErr) {
       console.error("Error retrieving Stripe Connect account:", acctErr);
@@ -86,12 +113,17 @@ const createPayment = async (req, res) => {
       amount: totalAmount,
       adminCommission,
       professionalAmount,
+      appointmentDay: appointmentDay || "",
+      appointmentSlot: appointmentSlot || "",
+      appointmentDate: appointmentDate ? new Date(appointmentDate) : undefined,
+      notes: notes || "",
       currency: "usd",
       status: "pending",
       payoutStatus: "pending",
     });
 
     const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+    const slotInfo = appointmentDay && appointmentSlot ? ` (${appointmentDay}, ${appointmentSlot})` : "";
 
     // Create Stripe Checkout Session with Direct Connect Transfer Split
     const session = await stripe.checkout.sessions.create({
@@ -102,7 +134,8 @@ const createPayment = async (req, res) => {
           price_data: {
             currency: "usd",
             product_data: {
-              name: `PoseFit Session with ${professional.firstName} ${professional.lastName}`,
+              name: `PoseFit Session with ${professional.firstName} ${professional.lastName}${slotInfo}`,
+              description: appointmentSlot ? `Appointment Slot: ${appointmentDay} ${appointmentSlot}` : "1-on-1 Fitness Session",
             },
             unit_amount: Math.round(totalAmount * 100),
           },
@@ -120,6 +153,8 @@ const createPayment = async (req, res) => {
           paymentId: payment._id.toString(),
           professionalId: professionalId.toString(),
           userId: userId.toString(),
+          appointmentDay: appointmentDay || "",
+          appointmentSlot: appointmentSlot || "",
         },
       },
 
@@ -127,10 +162,12 @@ const createPayment = async (req, res) => {
         paymentId: payment._id.toString(),
         professionalId: professionalId.toString(),
         userId: userId.toString(),
+        appointmentDay: appointmentDay || "",
+        appointmentSlot: appointmentSlot || "",
       },
 
-      success_url: `${frontendUrl}/payment-success`,
-      cancel_url: `${frontendUrl}/payment-cancelled`,
+      success_url: `${frontendUrl}/professionals/${professionalId}?booking_success=true`,
+      cancel_url: `${frontendUrl}/professionals/${professionalId}?booking_cancelled=true`,
     });
 
     payment.stripeSessionId = session.id;
@@ -148,42 +185,23 @@ const createPayment = async (req, res) => {
 
     return res.status(500).json({
       success: false,
-      message: "Unable to create payment",
-      error: error.message,
+      message: error.message || "Something went wrong while creating payment session",
     });
   }
 };
 
 const getPayment = async (req, res) => {
   try {
-    const payment = await PaymentModel.findById(req.params.id)
+    const { id } = req.params;
+
+    const payment = await PaymentModel.findById(id)
       .populate("user", "firstName lastName email")
-      .populate("professional", "firstName lastName email stripeAccountId stripeAccountStatus payoutsEnabled maskedBank");
+      .populate("professional", "firstName lastName email specialization sessionFee profilePhoto");
 
     if (!payment) {
       return res.status(404).json({
         success: false,
         message: "Payment not found",
-      });
-    }
-
-    const requesterId = req.user.userId.toString();
-
-    const isOwner =
-      payment.user &&
-      payment.user._id.toString() === requesterId;
-
-    const isProfessional =
-      payment.professional &&
-      payment.professional._id.toString() === requesterId;
-
-    const isAdmin =
-      req.user.role === "ADMIN";
-
-    if (!isOwner && !isProfessional && !isAdmin) {
-      return res.status(403).json({
-        success: false,
-        message: "You are not allowed to view this payment",
       });
     }
 
@@ -196,21 +214,22 @@ const getPayment = async (req, res) => {
 
     return res.status(500).json({
       success: false,
-      message: "Unable to fetch payment",
+      message: "Something went wrong",
     });
   }
 };
 
 const getUserPayments = async (req, res) => {
   try {
-    const payments = await PaymentModel.find({
-      user: req.user.userId,
-    })
-      .populate("professional", "firstName lastName email")
+    const userId = req.user.userId;
+
+    const payments = await PaymentModel.find({ user: userId })
+      .populate("professional", "firstName lastName email specialization profilePhoto")
       .sort({ createdAt: -1 });
 
     return res.status(200).json({
       success: true,
+      count: payments.length,
       payments,
     });
   } catch (error) {
@@ -218,7 +237,7 @@ const getUserPayments = async (req, res) => {
 
     return res.status(500).json({
       success: false,
-      message: "Unable to fetch payments",
+      message: "Something went wrong",
     });
   }
 };

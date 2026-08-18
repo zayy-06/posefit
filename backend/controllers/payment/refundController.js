@@ -1,11 +1,15 @@
+const dotenv = require("dotenv");
+dotenv.config();
+
 const Stripe = require("stripe");
 const PaymentModel = require("../../models/paymentModel");
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+const getStripe = () => new Stripe(process.env.STRIPE_SECRET_KEY);
 
 const refundPayment = async (req, res) => {
   try {
     const { id } = req.params;
+    const stripe = getStripe();
 
     const payment = await PaymentModel.findById(id);
 

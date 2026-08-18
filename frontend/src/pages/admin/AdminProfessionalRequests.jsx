@@ -392,7 +392,7 @@ export default function AdminProfessionalRequests() {
                   statusAction === "approved" ? "bg-emerald-600 hover:bg-emerald-700" : "bg-rose-600 hover:bg-rose-700"
                 }`}
               >
-                {actionLoading ? "Processing…" : statusAction === "approved" ? "Approve Live" : "Confirm Reject"}
+                {actionLoading ? "Processing..." : statusAction === "approved" ? "Approve Live" : "Confirm Reject"}
               </button>
             </div>
           </div>
