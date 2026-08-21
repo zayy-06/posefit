@@ -1,9 +1,5 @@
 const PaymentModel = require("../../models/paymentModel");
 
-/**
- * GET /api/professional/bookings
- * Retrieves all bookings/sessions belonging ONLY to the authenticated professional.
- */
 const getProfessionalBookings = async (req, res) => {
   try {
     const professionalId = req.user.userId;
@@ -35,11 +31,7 @@ const getProfessionalBookings = async (req, res) => {
   }
 };
 
-/**
- * GET /api/professional/bookings/:id
- * Retrieves details for a specific booking.
- * Enforces STRICT ownership authorization (Professional can ONLY access their own booking).
- */
+
 const getProfessionalBookingById = async (req, res) => {
   try {
     const professionalId = req.user.userId;

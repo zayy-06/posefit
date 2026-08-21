@@ -52,7 +52,7 @@ const addProfessional = async (req, res) => {
       email: email.toLowerCase(),
       password: hashedPassword,
       role: "PROFESSIONAL",
-      isVerified: true, // Auto-verified email when invited by admin
+      isVerified: true, 
       professionalStatus: "invited",
       professionalType: professionalType || "Trainer",
       specialization: specialization || "",

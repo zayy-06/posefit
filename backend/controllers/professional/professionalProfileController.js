@@ -1,10 +1,7 @@
 const UserModel = require("../../models/userModel");
 const { validateAvailabilityArray } = require("../../utils/timeValidation");
 
-/**
- * GET /api/professional/profile
- * Allows authenticated professional to view their own profile, verification status, and credentials.
- */
+
 const getProfessionalProfile = async (req, res) => {
   try {
     const professionalId = req.user.userId;
@@ -36,11 +33,6 @@ const getProfessionalProfile = async (req, res) => {
   }
 };
 
-/**
- * PUT /api/professional/profile
- * Allows authenticated professional to update allowed profile details.
- * Enforces admin-set professionalType as read-only.
- */
 const updateProfessionalProfile = async (req, res) => {
   try {
     const professionalId = req.user.userId;

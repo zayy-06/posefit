@@ -1,10 +1,7 @@
 const UserModel = require("../../models/userModel");
 const { validateAvailabilityArray } = require("../../utils/timeValidation");
 
-/**
- * GET /api/professional/availability
- * Retrieves the availability schedule of the authenticated professional.
- */
+
 const getAvailability = async (req, res) => {
   try {
     const professionalId = req.user.userId;
@@ -36,11 +33,7 @@ const getAvailability = async (req, res) => {
   }
 };
 
-/**
- * PUT /api/professional/availability
- * Updates/replaces the availability schedule for the authenticated professional.
- * Enforces strict time format, start < end, and no overlapping slots.
- */
+
 const updateAvailability = async (req, res) => {
   try {
     const professionalId = req.user.userId;

@@ -1,10 +1,7 @@
 const PaymentModel = require("../../models/paymentModel");
 const UserModel = require("../../models/userModel");
 
-/**
- * GET /api/professional/earnings
- * Calculates financial breakdown and Stripe Connect payout metrics for the authenticated professional.
- */
+
 const getProfessionalEarnings = async (req, res) => {
   try {
     const professionalId = req.user.userId;

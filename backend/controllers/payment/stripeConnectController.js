@@ -12,10 +12,6 @@ const getStripe = () => {
   return new Stripe(secretKey);
 };
 
-/**
- * Generates a Stripe Connect onboarding URL for a Professional using Stripe Accounts V2 API.
- * Route: POST /api/payment/stripe-connect/onboard
- */
 const createConnectOnboardingSession = async (req, res) => {
   try {
     const userId = req.user.userId;
@@ -118,10 +114,6 @@ const createConnectOnboardingSession = async (req, res) => {
   }
 };
 
-/**
- * Retrieves & synchronizes non-sensitive Stripe Connect status for a Professional using Accounts V2.
- * Route: GET /api/payment/stripe-connect/status
- */
 const getConnectStatus = async (req, res) => {
   try {
     const targetUserId = req.params.userId || req.user.userId;
@@ -209,10 +201,6 @@ const getConnectStatus = async (req, res) => {
   }
 };
 
-/**
- * Creates a Stripe Express Dashboard login link or fresh update link for the Professional.
- * Route: POST /api/payment/stripe-connect/dashboard-link
- */
 const getConnectDashboardLink = async (req, res) => {
   try {
     const userId = req.user.userId;

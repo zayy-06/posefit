@@ -1,6 +1,6 @@
 const UserModel = require("../../models/userModel");
 
-// Admin endpoint: Full details including bank details & credential documents for admin management
+
 const getProfessionals = async (req, res) => {
   try {
     const professionals = await UserModel.find({
@@ -22,7 +22,7 @@ const getProfessionals = async (req, res) => {
   }
 };
 
-// Public / User endpoint: Returns ONLY approved live professionals and EXCLUDES sensitive bankDetails & credentialDocs
+
 const getPublicProfessionals = async (req, res) => {
   try {
     const professionals = await UserModel.find({
@@ -47,7 +47,7 @@ const getPublicProfessionals = async (req, res) => {
   }
 };
 
-// Public endpoint for fetching single approved professional details
+
 const getPublicProfessionalById = async (req, res) => {
   try {
     const { id } = req.params;

@@ -1,10 +1,7 @@
 const UserModel = require("../../models/userModel");
 const PaymentModel = require("../../models/paymentModel");
 
-/**
- * GET /api/professional/dashboard
- * Aggregates dashboard metrics for the authenticated professional.
- */
+
 const getProfessionalDashboard = async (req, res) => {
   try {
     const professionalId = req.user.userId;
