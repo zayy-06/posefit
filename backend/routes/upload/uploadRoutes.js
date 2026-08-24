@@ -1,5 +1,6 @@
 const express = require("express");
 const authMiddleware = require("../../middleware/authMiddleware");
+const uploadMiddleware = require("../../middleware/uploadMiddleware")
 const {
   uploadPhotoHandler,
   uploadDocumentHandler,

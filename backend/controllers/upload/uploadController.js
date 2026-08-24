@@ -1,4 +1,4 @@
-const { uploadPhoto, uploadDocument } = require("../middleware/uploadMiddleware");
+
 
 const uploadPhotoHandler = (req, res) => {
   uploadPhoto.single("photo")(req, res, (err) => {
