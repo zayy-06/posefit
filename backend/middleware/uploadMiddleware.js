@@ -2,6 +2,7 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 
+
 // Ensure upload directories exist
 const photosDir = path.join(__dirname, "../uploads/photos");
 const docsDir = path.join(__dirname, "../uploads/documents");
