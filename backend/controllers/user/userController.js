@@ -1,28 +1,9 @@
 const UserModel = require("../../models/userModel");
 
-
-const getProfessionals = async (req, res) => {
-  try {
-    const professionals = await UserModel.find({
-      role: "PROFESSIONAL",
-    }).select("-password -verificationCode");
-
-    return res.status(200).json({
-      success: true,
-      count: professionals.length,
-      professionals,
-    });
-  } catch (error) {
-    console.error("Error fetching professionals for admin:", error);
-
-    return res.status(500).json({
-      success: false,
-      message: "Internal server error while fetching professionals",
-    });
-  }
-};
-
-
+/**
+ * GET /api/user/public-professionals OR /api/auth/public-professionals
+ * Fetches all approved professionals for user discovery
+ */
 const getPublicProfessionals = async (req, res) => {
   try {
     const professionals = await UserModel.find({
@@ -38,7 +19,7 @@ const getPublicProfessionals = async (req, res) => {
       professionals,
     });
   } catch (error) {
-    console.error("Error fetching public professionals:", error);
+    console.error("Error fetching public professionals for users:", error);
 
     return res.status(500).json({
       success: false,
@@ -47,7 +28,10 @@ const getPublicProfessionals = async (req, res) => {
   }
 };
 
-
+/**
+ * GET /api/user/public-professionals/:id OR /api/auth/public-professionals/:id
+ * Fetches a single approved professional with their availability schedule for user appointment booking
+ */
 const getPublicProfessionalById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -72,7 +56,7 @@ const getPublicProfessionalById = async (req, res) => {
       professional,
     });
   } catch (error) {
-    console.error("Error fetching public professional by id:", error);
+    console.error("Error fetching public professional availability details:", error);
 
     return res.status(500).json({
       success: false,
@@ -82,7 +66,6 @@ const getPublicProfessionalById = async (req, res) => {
 };
 
 module.exports = {
-  getProfessionals,
   getPublicProfessionals,
   getPublicProfessionalById,
 };

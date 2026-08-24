@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from "react-router-dom";
-import { clearAdminAuth, getAdminUser } from "../../lib/admin-auth";
+import { deleteToken, getUser } from "../../lib/local-storage";
 import {
   IconDashboard,
   IconUsers,
@@ -21,10 +21,10 @@ const NAV_ITEMS = [
 
 export default function AdminLayout({ children }) {
   const navigate = useNavigate();
-  const user = getAdminUser();
+  const user = getUser();
 
   const handleLogout = () => {
-    clearAdminAuth();
+    deleteToken();
     navigate("/admin/login");
   };
 
@@ -84,11 +84,11 @@ export default function AdminLayout({ children }) {
               className="w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm text-white shrink-0 shadow-xs"
               style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}
             >
-              {user?.firstName?.[0] || "A"}
+              {user?.firstName?.[0] || user?.name?.[0] || "A"}
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold truncate text-stone-800">
-                {user ? `${user.firstName} ${user.lastName}` : "Admin"}
+                {user?.name || (user?.firstName ? `${user.firstName} ${user.lastName || ""}`.trim() : "Admin")}
               </p>
               <p className="text-xs font-medium truncate text-stone-400">{user?.email || ""}</p>
             </div>

@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { setAdminToken, setAdminUser } from "../../lib/admin-auth";
-import { setProToken, setProUser } from "../../lib/professional-auth";
+import { setToken, setUser } from "../../lib/local-storage";
 import { httpClient } from "../../lib/http";
 import {
   IconLock,
@@ -65,13 +64,12 @@ export default function AdminLogin() {
         localStorage.removeItem(REMEMBER_PASS_KEY);
       }
 
+      setToken(token);
+      setUser(user);
+
       if (user.role === "ADMIN") {
-        setAdminToken(token);
-        setAdminUser(user);
         navigate("/admin/dashboard");
       } else if (user.role === "PROFESSIONAL") {
-        setProToken(token);
-        setProUser(user);
         navigate("/professional/dashboard");
       }
     } catch (err) {

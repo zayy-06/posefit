@@ -5,26 +5,14 @@ const professionalMiddleware = require("../../middleware/professionalMiddleware"
 
 const {
   getProfessionalDashboard,
-} = require("../../controllers/professional/professionalDashboardController");
-
-const {
   getProfessionalProfile,
   updateProfessionalProfile,
-} = require("../../controllers/professional/professionalProfileController");
-
-const {
   getProfessionalBookings,
   getProfessionalBookingById,
-} = require("../../controllers/professional/professionalBookingController");
-
-const {
   getAvailability,
   updateAvailability,
-} = require("../../controllers/professional/professionalAvailabilityController");
-
-const {
   getProfessionalEarnings,
-} = require("../../controllers/professional/professionalEarningsController");
+} = require("../../controllers/professional/professionalController");
 
 const router = express.Router();
 

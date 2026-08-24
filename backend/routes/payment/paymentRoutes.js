@@ -7,19 +7,12 @@ const {
   createPayment,
   getPayment,
   getUserPayments,
-} = require("../../controllers/payment/paymentController");
-
-const {
   getAdminPayments,
-} = require("../../controllers/payment/adminPaymentController");
-
-const refundPayment = require("../../controllers/payment/refundController");
-
-const {
+  refundPayment,
   createConnectOnboardingSession,
   getConnectStatus,
   getConnectDashboardLink,
-} = require("../../controllers/payment/stripeConnectController");
+} = require("../../controllers/payment/paymentController");
 
 const router = express.Router();
 

@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from "react-router-dom";
-import { clearProAuth, getProUser } from "../../lib/professional-auth";
+import { deleteToken, getUser } from "../../lib/local-storage";
 import {
   IconDashboard,
   IconClipboard,
@@ -19,10 +19,10 @@ const NAV_ITEMS = [
 
 export default function ProfessionalLayout({ children }) {
   const navigate = useNavigate();
-  const user = getProUser();
+  const user = getUser();
 
   const handleLogout = () => {
-    clearProAuth();
+    deleteToken();
     navigate("/admin/login");
   };
 
@@ -80,11 +80,11 @@ export default function ProfessionalLayout({ children }) {
               className="w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm text-white shrink-0 shadow-xs"
               style={{ background: "linear-gradient(135deg, #fb923c, #f97316)" }}
             >
-              {user?.firstName?.[0] || "P"}
+              {user?.firstName?.[0] || user?.name?.[0] || "P"}
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold truncate text-stone-800">
-                {user ? `${user.firstName} ${user.lastName}` : "Professional"}
+                {user?.name || (user?.firstName ? `${user.firstName} ${user.lastName || ""}`.trim() : "Professional")}
               </p>
               <p className="text-xs font-medium truncate text-stone-400">
                 {user?.professionalType || "Trainer"} • {user?.email || ""}

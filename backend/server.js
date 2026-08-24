@@ -10,7 +10,8 @@ const adminRoutes = require("./routes/admin/adminRoutes");
 const paymentRoutes = require("./routes/payment/paymentRoutes");
 const professionalRoutes = require("./routes/professional/professionalRoutes");
 const uploadRoutes = require("./routes/upload/uploadRoutes");
-const stripeWebhook = require("./controllers/payment/stripeWebhookController");
+const userRoutes = require("./routes/user/userRoutes");
+const { stripeWebhook } = require("./controllers/payment/paymentController");
 const ConnectToDB = require("./models/db");
 
 const app = express();
@@ -38,6 +39,7 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/payment", paymentRoutes);
 app.use("/api/professional", professionalRoutes);
 app.use("/api/upload", uploadRoutes);
+app.use("/api/user", userRoutes);
 
 app.get("/", (req, res) => {
   res.json({

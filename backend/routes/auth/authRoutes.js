@@ -13,7 +13,7 @@ const {
 const {
   getPublicProfessionals,
   getPublicProfessionalById,
-} = require("../../controllers/admin/getProfessionalsController");
+} = require("../../controllers/user/userController");
 
 const router = express.Router();
 

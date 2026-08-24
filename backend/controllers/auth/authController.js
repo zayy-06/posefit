@@ -194,7 +194,14 @@ const login = async (req, res) => {
 
     const token = generateToken(
       user._id.toString(),
-      user.role
+      user.role,
+      {
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        professionalType: user.professionalType,
+        professionalStatus: user.professionalStatus,
+      }
     );
 
     const userData = user.toObject();

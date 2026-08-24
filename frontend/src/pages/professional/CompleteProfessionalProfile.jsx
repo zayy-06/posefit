@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { httpClient } from "../../lib/http";
-import { getProUser, setProUser, clearProAuth } from "../../lib/professional-auth";
+import { getUser, deleteToken } from "../../lib/local-storage";
 import {
   IconCheckCircle,
   IconClock,
@@ -28,7 +28,7 @@ function formatTo12Hour(time24) {
 
 export default function CompleteProfessionalProfile() {
   const navigate = useNavigate();
-  const [user, setUser] = useState(getProUser());
+  const [user, setUser] = useState(getUser());
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
@@ -66,7 +66,6 @@ export default function CompleteProfessionalProfile() {
       const p = res.data?.professional;
       if (p) {
         setUser(p);
-        setProUser(p);
         if (p.profilePhoto) {
           setProfilePhotoUrl(p.profilePhoto);
           setPhotoPreview(p.profilePhoto);
@@ -94,7 +93,7 @@ export default function CompleteProfessionalProfile() {
   }, [fetchProfile]);
 
   const handleLogout = () => {
-    clearProAuth();
+    deleteToken();
     navigate("/admin/login", { replace: true });
   };
 
@@ -270,7 +269,6 @@ export default function CompleteProfessionalProfile() {
       const updated = res.data?.professional;
       if (updated) {
         setUser(updated);
-        setProUser(updated);
       }
       showToast("Profile application submitted for verification!");
     } catch (err) {

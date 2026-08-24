@@ -1,7 +1,7 @@
 import { useState } from "react";
 import AdminLayout from "../../components/admin/AdminLayout";
 import { httpClient } from "../../lib/http";
-import { getAdminUser, setAdminUser } from "../../lib/admin-auth";
+import { getUser } from "../../lib/local-storage";
 import {
   IconLock,
   IconUsers,
@@ -16,7 +16,7 @@ export default function AdminSettings() {
   const [activeTab, setActiveTab] = useState("security"); // "security" | "profile" | "notifications" | "preferences" | "system"
 
   // Admin user info
-  const currentUser = getAdminUser() || { firstName: "Admin", lastName: "User", email: "admin@posefit.com", role: "ADMIN" };
+  const currentUser = getUser() || { firstName: "Admin", lastName: "User", email: "admin@posefit.com", role: "ADMIN" };
   const [profileForm, setProfileForm] = useState({
     firstName: currentUser.firstName || "",
     lastName: currentUser.lastName || "",
