@@ -196,9 +196,30 @@ export default function ProfessionalEarnings() {
                         <td className="px-5 py-4 font-black text-emerald-700 whitespace-nowrap">${p.professionalAmount?.toFixed(2)}</td>
                         <td className="px-5 py-4 whitespace-nowrap"><StatusBadge status={p.status} /></td>
                         <td className="px-5 py-4 whitespace-nowrap">
-                          <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold border ${p.payoutStatus === "transferred" || p.status === "completed" ? "bg-emerald-50 text-emerald-800 border-emerald-200" : "bg-stone-100 text-stone-600 border-stone-200"}`}>
-                            {p.payoutStatus === "transferred" || p.status === "completed" ? "Transferred to Connect" : "Pending"}
-                          </span>
+                       {/* Updated code for Maham's payout status handling */}
+<span
+  className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold border ${
+    p.status === "refunded" || p.payoutStatus === "reversed"
+      ? "bg-sky-50 text-sky-800 border-sky-200"
+      : p.payoutStatus === "failed" || p.status === "failed"
+      ? "bg-rose-50 text-rose-800 border-rose-200"
+      : p.payoutStatus === "transferred" ||
+        p.payoutStatus === "paid" ||
+        p.status === "completed"
+      ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+      : "bg-stone-100 text-stone-600 border-stone-200"
+  }`}
+>
+  {p.status === "refunded" || p.payoutStatus === "reversed"
+    ? "Reversed"
+    : p.payoutStatus === "failed" || p.status === "failed"
+    ? "Failed"
+    : p.payoutStatus === "transferred" ||
+      p.payoutStatus === "paid" ||
+      p.status === "completed"
+    ? "Transferred to Connect"
+    : "Pending"}
+</span>
                         </td>
                         <td className="px-5 py-4 text-xs text-stone-500 font-medium whitespace-nowrap">
                           {new Date(p.paidAt || p.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}

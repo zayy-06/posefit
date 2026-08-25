@@ -57,6 +57,7 @@ const paymentSchema = new mongoose.Schema(
       trim: true,
     },
 
+    // Stripe IDs
     stripePaymentIntentId: {
       type: String,
       unique: true,
@@ -74,15 +75,45 @@ const paymentSchema = new mongoose.Schema(
       sparse: true,
     },
 
+    // Stripe Refund Details
+    stripeRefundId: {
+      type: String,
+      sparse: true,
+    },
+
+    refundAmount: {
+      type: Number,
+      min: 0,
+    },
+
+    refundStatus: {
+      type: String,
+      enum: ["pending", "succeeded", "failed"],
+    },
+
+    // Payment Status
     status: {
       type: String,
-      enum: ["pending", "completed", "failed", "refunded", "cancelled"],
+      enum: [
+        "pending",
+        "completed",
+        "failed",
+        "refunded",
+        "cancelled",
+      ],
       default: "pending",
     },
 
+    // Professional Connect Transfer Status
     payoutStatus: {
       type: String,
-      enum: ["pending", "transferred", "paid", "failed"],
+      enum: [
+        "pending",
+        "transferred",
+        "paid",
+        "reversed",
+        "failed",
+      ],
       default: "pending",
     },
 

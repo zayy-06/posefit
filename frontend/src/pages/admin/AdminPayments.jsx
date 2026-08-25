@@ -66,18 +66,39 @@ export default function AdminPayments() {
     return matchStatus && matchSearch;
   });
 
-  const handleRefund = async () => {
-    setActionLoading(true);
-    try {
-      await httpClient.post(`/payment/refund/${selectedPayment._id}`);
-      showToast("Payment refunded successfully & Connect transfer reversed!");
-      setRefundOpen(false);
-      fetchPayments();
-    } catch (err) {
-      showToast(err?.response?.data?.message || "Failed to process refund.", "error");
-      setRefundOpen(false);
-    } finally { setActionLoading(false); }
-  };
+  // ADMIN REFUND: Process full Stripe refund, reverse professional Connect transfer,
+// refund PoseFit application fee, notify the user by email, and refresh admin payments.
+const handleRefund = async () => {
+  setActionLoading(true);
+
+  try {
+    const res = await httpClient.post(
+      `/payment/refund/${selectedPayment._id}`
+    );
+
+    showToast(
+      res.data?.message ||
+        "Payment refunded successfully. Connect transfer reversed and user notified."
+    );
+
+    setRefundOpen(false);
+    setSelectedPayment(null);
+
+    // Refresh payment list so the refunded transaction immediately shows
+    // "Refunded" and "Reversed" on the Admin panel.
+    await fetchPayments();
+  } catch (err) {
+    showToast(
+      err?.response?.data?.message ||
+        "Failed to process refund.",
+      "error"
+    );
+
+    setRefundOpen(false);
+  } finally {
+    setActionLoading(false);
+  }
+};
 
   const summaryCards = [
     {

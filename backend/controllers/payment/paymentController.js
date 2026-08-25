@@ -312,7 +312,12 @@ const refundPayment = async (req, res) => {
     const { id } = req.params;
     const stripe = getStripe();
 
-    const payment = await PaymentModel.findById(id);
+    const payment = await PaymentModel.findById(id)
+      .populate("user", "firstName lastName email")
+      .populate(
+        "professional",
+        "firstName lastName email stripeAccountId"
+      );
 
     if (!payment) {
       return res.status(404).json({
@@ -321,6 +326,15 @@ const refundPayment = async (req, res) => {
       });
     }
 
+    // Prevent duplicate refunds
+    if (payment.status === "refunded") {
+      return res.status(400).json({
+        success: false,
+        message: "This payment has already been refunded",
+      });
+    }
+
+    // Only completed payments can be refunded
     if (payment.status !== "completed") {
       return res.status(400).json({
         success: false,
@@ -335,30 +349,142 @@ const refundPayment = async (req, res) => {
       });
     }
 
-    // Process Stripe Connect Refund with Transfer Reversal
+    /*
+     * STRIPE REFUND
+     *
+     * reverse_transfer:
+     * Reverses the professional's 80% transfer.
+     *
+     * refund_application_fee:
+     * Refunds PoseFit's 20% application fee.
+     */
     const refund = await stripe.refunds.create({
       payment_intent: payment.stripePaymentIntentId,
       reverse_transfer: true,
       refund_application_fee: true,
     });
 
+    /*
+     * IMPORTANT:
+     *
+     * Only update our DB AFTER Stripe successfully
+     * creates the refund.
+     */
     payment.status = "refunded";
-    payment.payoutStatus = "failed";
+
+    // Professional's previous transfer has been reversed.
+    payment.payoutStatus = "reversed";
+
     payment.refundedAt = new Date();
+
+    payment.stripeRefundId = refund.id;
+
+    payment.refundAmount = Number(
+      (refund.amount / 100).toFixed(2)
+    );
+
+    payment.refundStatus = refund.status;
 
     await payment.save();
 
+    /*
+     * SEND REFUND EMAIL TO USER
+     *
+     * We use the same Gmail SMTP configuration already
+     * used by your auth controller.
+     */
+    try {
+      const nodemailer = require("nodemailer");
+
+      const transporter = nodemailer.createTransport({
+        host: "smtp.gmail.com",
+        port: 465,
+        secure: true,
+        auth: {
+          user: process.env.USER_EMAIL,
+          pass: process.env.USER_PASS,
+        },
+      });
+
+      if (payment.user?.email) {
+        const userName =
+          `${payment.user.firstName || ""} ${
+            payment.user.lastName || ""
+          }`.trim() || "PoseFit User";
+
+        await transporter.sendMail({
+          from: `"PoseFit" <${process.env.USER_EMAIL}>`,
+          to: payment.user.email,
+          subject: "PoseFit Payment Refund Confirmation",
+
+          text:
+            `Hi ${userName},\n\n` +
+
+            `Your PoseFit payment has been successfully refunded.\n\n` +
+
+            `Refund Amount: $${Number(
+              payment.refundAmount || payment.amount
+            ).toFixed(2)}\n` +
+
+            `Refund ID: ${refund.id}\n` +
+
+            `Refund Date: ${new Date().toLocaleDateString(
+              "en-US",
+              {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              }
+            )}\n\n` +
+
+            `The refund has been sent back to your original payment method used for the payment.\n\n` +
+
+            `Please note that it may take some time for the refund to appear on your bank or card statement, depending on your bank/card provider.\n\n` +
+
+            `If you have any questions, please contact the PoseFit support team.\n\n` +
+
+            `Regards,\n` +
+            `PoseFit Team`,
+        });
+      }
+    } catch (emailError) {
+      /*
+       * DO NOT mark the refund as failed just because
+       * the email failed.
+       *
+       * Stripe refund already succeeded.
+       */
+      console.error(
+        "Refund email could not be sent:",
+        emailError
+      );
+    }
+
     return res.status(200).json({
       success: true,
-      message: "Payment refunded successfully and connected transfer reversed",
+
+      message:
+        "Payment refunded successfully and connected transfer reversed",
+
       refundId: refund.id,
+
+      refundAmount: Number(
+        (refund.amount / 100).toFixed(2)
+      ),
+
+      refundStatus: refund.status,
+
+      payoutStatus: "reversed",
+
+      emailSent: !!payment.user?.email,
     });
   } catch (error) {
     console.error("Refund payment error:", error);
 
     return res.status(500).json({
       success: false,
-      message: error.message || "Unable to refund payment",
+      message:
+        error.message || "Unable to refund payment",
     });
   }
 };

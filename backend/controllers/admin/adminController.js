@@ -81,11 +81,11 @@ const deleteUser = async (req, res) => {
   }
 };
 
-// 4. Update user details
+// 4. Update user details//remember to update in maham's code
 const updateUser = async (req, res) => {
   try {
     const userId = req.params.id;
-    const { firstName, lastName, email } = req.body;
+    const { firstName, lastName } = req.body;
 
     const user = await UserModel.findById(userId);
 
@@ -95,27 +95,11 @@ const updateUser = async (req, res) => {
         message: "User not found",
       });
     }
-
-    if (email) {
-      const existingUser = await UserModel.findOne({
-        email: email.toLowerCase(),
-        _id: { $ne: userId },
-      });
-
-      if (existingUser) {
-        return res.status(400).json({
-          success: false,
-          message: "Email is already in use by another user",
-        });
-      }
-    }
-
     const updatedData = {};
 
     if (firstName) updatedData.firstName = firstName;
     if (lastName) updatedData.lastName = lastName;
-    if (email) updatedData.email = email.toLowerCase();
-
+    
     const updatedUser = await UserModel.findByIdAndUpdate(
       userId,
       updatedData,
@@ -214,7 +198,7 @@ const getProfessionals = async (req, res) => {
   }
 };
 
-// 9. Admin invites / adds a new professional
+// 9. Admin invites / adds a new professional// remember to add it in maham's code
 const addProfessional = async (req, res) => {
   try {
     const {
@@ -226,28 +210,27 @@ const addProfessional = async (req, res) => {
       specialization,
       sessionFee,
     } = req.body;
-
-    if (!firstName || !lastName || !email) {
+ 
+    if (!firstName || !lastName || !email || !password) {
       return res.status(400).json({
         success: false,
-        message: "First name, last name, and email are required",
+        message: "First name, last name, email, and password are required",
       });
     }
-
+ 
     const existingUser = await UserModel.findOne({
       email: email.toLowerCase(),
     });
-
+ 
     if (existingUser) {
       return res.status(400).json({
         success: false,
         message: "Email is already registered",
       });
     }
-
-    const tempPassword = password || `PoseFit@${Math.floor(1000 + Math.random() * 9000)}`;
-    const hashedPassword = await bcrypt.hash(tempPassword, 10);
-
+ 
+    const hashedPassword = await bcrypt.hash(password, 10);
+ 
     const newProfessional = new UserModel({
       firstName,
       lastName,
@@ -261,38 +244,37 @@ const addProfessional = async (req, res) => {
       sessionFee: sessionFee ? Number(sessionFee) : 0,
       appliedAt: new Date(),
     });
-
+ 
     await newProfessional.save();
-
+ 
     try {
       await transporter.sendMail({
         from: `"PoseFit Admin" <${process.env.USER_EMAIL}>`,
         to: email.toLowerCase(),
         subject: "Welcome to PoseFit - Professional Onboarding Credentials",
         text: `Hi ${firstName} ${lastName},
-
+ 
 Congratulations! The PoseFit Admin team has invited you to join PoseFit as a Professional ${professionalType || "Trainer"}.
-
+ 
 Here are your initial login credentials:
 Login Email: ${email.toLowerCase()}
-Temporary Password: ${tempPassword}
-
+Password: ${password}
+ 
 Next Steps:
 1. Log in to your PoseFit account using these credentials.
 2. Complete your professional profile by uploading your bio, photo, credential documents, bank details, and availability schedule.
 3. Once submitted, your profile will be reviewed by the admin for final live verification.
-
+ 
 Regards,
 PoseFit Team`,
       });
     } catch (emailErr) {
       console.error("Failed to send onboarding email:", emailErr);
     }
-
+ 
     return res.status(201).json({
       success: true,
       message: "Professional invited & account created successfully. Credentials emailed to professional.",
-      tempPassword,
       professional: {
         _id: newProfessional._id,
         firstName: newProfessional.firstName,
@@ -307,7 +289,7 @@ PoseFit Team`,
     });
   } catch (error) {
     console.error("Error adding professional:", error);
-
+ 
     return res.status(500).json({
       success: false,
       message: "Internal server error while adding professional",
@@ -425,9 +407,7 @@ const getPendingProfessionals = async (req, res) => {
   try {
     const professionals = await UserModel.find({
       role: "PROFESSIONAL",
-      professionalStatus: {
-        $in: ["pending_verification", "PENDING_VERIFICATION", "PENDING"],
-      },
+      professionalStatus: "pending_verification" // only this line needs to be updated in maham's code
     })
       .select(
         "firstName lastName email role professionalType specialization bio profilePhoto sessionFee credentialDocs bankDetails availability professionalStatus rejectionReason appliedAt verificationNotes"

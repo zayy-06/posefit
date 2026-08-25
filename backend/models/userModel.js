@@ -10,7 +10,7 @@ const UserSchema = new Schema(
       trim: true,
     },
 
-    lastName: { 
+    lastName: {
       type: String,
       required: true,
       trim: true,
@@ -45,11 +45,23 @@ const UserSchema = new Schema(
       type: String,
     },
 
-    // Professional Specific Fields
+    // =========================================================
+    // PROFESSIONAL SPECIFIC FIELDS
+    // These fields should only be populated for PROFESSIONAL users.
+    // =========================================================
+
     professionalType: {
       type: String,
-      enum: ["Trainer", "Nutritionist", "TRAINER", "NUTRITIONIST", "OTHER"],
-      default: "Trainer",
+      enum: [
+        "Trainer",
+        "Nutritionist",
+        "TRAINER",
+        "NUTRITIONIST",
+        "OTHER",
+      ],
+      required: function () {
+        return this.role === "PROFESSIONAL";
+      },
     },
 
     specialization: {
@@ -60,7 +72,6 @@ const UserSchema = new Schema(
     sessionFee: {
       type: Number,
       min: 0,
-      default: 0,
     },
 
     profilePhoto: {
@@ -74,64 +85,57 @@ const UserSchema = new Schema(
     },
 
     rating: {
-      average: { type: Number, default: 5.0, min: 0, max: 5 },
-      count: { type: Number, default: 0, min: 0 },
-    },
-
-    credentialDocs: [
-      {
-        title: { type: String, trim: true },
-        fileUrl: { type: String, trim: true },
-        uploadedAt: { type: Date, default: Date.now },
+      average: {
+        type: Number,
+        min: 0,
+        max: 5,
       },
-    ],
-
-    // Stripe Connect Non-Sensitive Information
-    stripeAccountId: {
-      type: String,
-      trim: true,
-    },
-
-    stripeAccountStatus: {
-      type: String,
-      enum: ["unconnected", "pending", "active", "restricted"],
-      default: "unconnected",
-    },
-
-    chargesEnabled: {
-      type: Boolean,
-      default: false,
-    },
-
-    payoutsEnabled: {
-      type: Boolean,
-      default: false,
-    },
-
-    maskedBank: {
-      type: String,
-      trim: true,
-      default: "",
-    },
-
-    // Optional legacy bankDetails placeholder (never stored raw)
-    bankDetails: {
-      accountHolderName: { type: String, trim: true },
-      bankName: { type: String, trim: true },
-      accountNumber: { type: String, trim: true },
-      routingNumber: { type: String, trim: true },
-      iban: { type: String, trim: true },
-      swiftCode: { type: String, trim: true },
-    },
-
-    availability: [
-      {
-        day: { type: String, trim: true },
-        slots: [{ type: String, trim: true }],
+      count: {
+        type: Number,
+        min: 0,
       },
-    ],
+    },
 
-    // Professional verification status flow: invited -> pending_verification -> approved / rejected
+    credentialDocs: {
+      type: [
+        {
+          title: {
+            type: String,
+            trim: true,
+          },
+          fileUrl: {
+            type: String,
+            trim: true,
+          },
+          uploadedAt: {
+            type: Date,
+            default: Date.now,
+          },
+        },
+      ],
+      default: undefined,
+    },
+
+    availability: {
+      type: [
+        {
+          day: {
+            type: String,
+            trim: true,
+          },
+          slots: [
+            {
+              type: String,
+              trim: true,
+            },
+          ],
+        },
+      ],
+      default: undefined,
+    },
+
+    // Professional verification status flow
+    // invited -> pending_verification -> approved / rejected
     professionalStatus: {
       type: String,
       enum: [
@@ -146,7 +150,9 @@ const UserSchema = new Schema(
         "REJECTED",
       ],
       default: function () {
-        return this.role === "PROFESSIONAL" ? "invited" : undefined;
+        return this.role === "PROFESSIONAL"
+          ? "invited"
+          : undefined;
       },
     },
 
@@ -171,13 +177,79 @@ const UserSchema = new Schema(
 
     appliedAt: {
       type: Date,
-      default: Date.now,
+      default: function () {
+        return this.role === "PROFESSIONAL"
+          ? Date.now()
+          : undefined;
+      },
+    },
+
+    // =========================================================
+    // STRIPE CONNECT
+    // These fields are intended for PROFESSIONAL users.
+    // =========================================================
+
+    stripeAccountId: {
+      type: String,
+      trim: true,
+    },
+
+    stripeAccountStatus: {
+      type: String,
+      enum: [
+        "unconnected",
+        "pending",
+        "active",
+        "restricted",
+      ],
+    },
+
+    chargesEnabled: {
+      type: Boolean,
+    },
+
+    payoutsEnabled: {
+      type: Boolean,
+    },
+
+    maskedBank: {
+      type: String,
+      trim: true,
     },
   },
-  {
-    timestamps: true,
-  }
 );
+
+
+UserSchema.pre("save", function () {
+  if (this.role !== "PROFESSIONAL") {
+    // Professional profile fields
+    this.professionalType = undefined;
+    this.specialization = undefined;
+    this.sessionFee = undefined;
+    this.profilePhoto = undefined;
+    this.bio = undefined;
+    this.rating = undefined;
+    this.credentialDocs = undefined;
+    this.availability = undefined;
+
+    // Professional verification fields
+    this.professionalStatus = undefined;
+    this.rejectionReason = undefined;
+    this.verificationMeetingLink = undefined;
+    this.verificationMeetingTime = undefined;
+    this.verificationNotes = undefined;
+    this.appliedAt = undefined;
+
+    // Stripe Connect fields
+    this.stripeAccountId = undefined;
+    this.stripeAccountStatus = undefined;
+    this.chargesEnabled = undefined;
+    this.payoutsEnabled = undefined;
+    this.maskedBank = undefined;
+
+    
+  }
+});
 
 const UserModel = mongoose.model("User", UserSchema);
 
