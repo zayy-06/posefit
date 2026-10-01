@@ -18,7 +18,7 @@ const getTransporter = () => {
     pass: emailPassword,
   },
 });
-
+};
 const sendBookingConfirmationEmails = async ({
   user,
   professional,
