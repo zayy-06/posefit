@@ -1,24 +1,20 @@
 
-const nodemailer = require("nodemailer");
+const { Resend } = require("resend");
 
-const getTransporter = () => {
-  const emailUser = process.env.EMAIL_USER?.trim();
-  const emailPassword = process.env.EMAIL_PASSWORD?.trim();
+const getResendClient = () => {
+  const apiKey = process.env.RESEND_API_KEY?.trim();
 
-  if (!emailUser || !emailPassword) {
-    throw new Error("Email credentials are not configured");
+  if (!apiKey) {
+    throw new Error("Resend API key is not configured");
   }
 
-  return nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 587,
-  secure: false,
-  auth: {
-    user: emailUser,
-    pass: emailPassword,
-  },
-});
+  return new Resend(apiKey);
 };
+
+const getEmailFrom = () => {
+  return process.env.EMAIL_FROM?.trim() || "PoseFit <onboarding@resend.dev>";
+};
+
 const sendBookingConfirmationEmails = async ({
   user,
   professional,
@@ -26,15 +22,17 @@ const sendBookingConfirmationEmails = async ({
   appointmentDay,
   appointmentSlot,
 }) => {
-  const transporter = getTransporter();
+  const resend = getResendClient();
+  const from = getEmailFrom();
 
-  const formattedDate = new Date(
-    appointmentDate
-  ).toLocaleDateString("en-PK", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+  const formattedDate = new Date(appointmentDate).toLocaleDateString(
+    "en-PK",
+    {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    }
+  );
 
   const userName =
     `${user?.firstName || ""} ${user?.lastName || ""}`.trim() ||
@@ -45,7 +43,7 @@ const sendBookingConfirmationEmails = async ({
     "PoseFit Professional";
 
   const userMail = {
-    from: `"PoseFit" <${process.env.EMAIL_USER}>`,
+    from,
     to: user.email,
     subject: "PoseFit Session Booking Confirmed",
 
@@ -101,7 +99,7 @@ const sendBookingConfirmationEmails = async ({
   };
 
   const professionalMail = {
-    from: `"PoseFit" <${process.env.EMAIL_USER}>`,
+    from,
     to: professional.email,
     subject: "PoseFit Session Booking Confirmed",
 
@@ -162,13 +160,11 @@ const sendBookingConfirmationEmails = async ({
   };
 
   await Promise.all([
-     transporter.sendMail(userMail),
-     transporter.sendMail(professionalMail),
-   ]);
+    resend.emails.send(userMail),
+    resend.emails.send(professionalMail),
+  ]);
 
-
-return true;
- 
+  return true;
 };
 
 const sendBookingReminderEmails = async ({
@@ -179,15 +175,17 @@ const sendBookingReminderEmails = async ({
   appointmentSlot,
   meetingLink,
 }) => {
-  const transporter = getTransporter();
+  const resend = getResendClient();
+  const from = getEmailFrom();
 
-  const formattedDate = new Date(
-    appointmentDate
-  ).toLocaleDateString("en-PK", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+  const formattedDate = new Date(appointmentDate).toLocaleDateString(
+    "en-PK",
+    {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    }
+  );
 
   const userName =
     `${user?.firstName || ""} ${user?.lastName || ""}`.trim() ||
@@ -198,7 +196,7 @@ const sendBookingReminderEmails = async ({
     "PoseFit Professional";
 
   const userMail = {
-    from: `"PoseFit" <${process.env.EMAIL_USER}>`,
+    from,
     to: user.email,
     subject: "PoseFit Session Starting Soon - Join Google Meet",
 
@@ -270,7 +268,7 @@ const sendBookingReminderEmails = async ({
   };
 
   const professionalMail = {
-    from: `"PoseFit" <${process.env.EMAIL_USER}>`,
+    from,
     to: professional.email,
     subject: "PoseFit Session Starting Soon - Join Google Meet",
 
@@ -347,8 +345,8 @@ const sendBookingReminderEmails = async ({
   };
 
   await Promise.all([
-    transporter.sendMail(userMail),
-    transporter.sendMail(professionalMail),
+    resend.emails.send(userMail),
+    resend.emails.send(professionalMail),
   ]);
 
   return true;
@@ -358,3 +356,4 @@ module.exports = {
   sendBookingConfirmationEmails,
   sendBookingReminderEmails,
 };
+
