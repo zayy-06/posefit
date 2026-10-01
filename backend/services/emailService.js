@@ -10,13 +10,14 @@ const getTransporter = () => {
   }
 
   return nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: emailUser,
-      pass: emailPassword,
-    },
-  });
-};
+  host: "smtp.gmail.com",
+  port: 587,
+  secure: false,
+  auth: {
+    user: emailUser,
+    pass: emailPassword,
+  },
+});
 
 const sendBookingConfirmationEmails = async ({
   user,
