@@ -214,6 +214,7 @@ export default function UserDashboard() {
         const response = await httpClient.get(`/user/user-metrics/${userId}`);
 
         const metricsData = response?.data?.data;
+        console.log("Metrics API response:", metricsData);
 
         if (!metricsData) {
           setMetrics(null);
