@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from "react";
+
 import { useParams, useNavigate } from "react-router-dom";
+
 import {
   Play,
   Square,
@@ -13,8 +15,11 @@ import {
   ArrowLeft,
   Camera,
 } from "lucide-react";
+
 import { toast } from "sonner";
+
 import axios from "axios";
+
 import UserLayout from "../../components/user/UserLayout";
 
 import squatImage from "../../assets/squate.png";
@@ -58,7 +63,6 @@ const POSE_API_URL = (import.meta.env.VITE_POSE_API_URL || "").replace(
 const SAME_MESSAGE_COOLDOWN = 4000;
 const DIFFERENT_MESSAGE_COOLDOWN = 2500;
 const MIN_MESSAGE_LENGTH = 3;
-
 const FEEDBACK_DISPLAY_MIN_GAP = 900;
 
 export default function WorkoutSession() {
@@ -82,7 +86,6 @@ export default function WorkoutSession() {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const streamRef = useRef(null);
-
   const isActiveRef = useRef(false);
   const frameTimerRef = useRef(null);
   const processingFrameRef = useRef(false);
@@ -100,12 +103,19 @@ export default function WorkoutSession() {
   const [warning, setWarning] = useState("");
   const [displayFeedback, setDisplayFeedback] = useState("Ready to start");
   const [displayWarning, setDisplayWarning] = useState("");
+
   const feedbackDisplayRef = useRef({
     text: "Ready to start",
     time: 0,
     timer: null,
   });
-  const warningDisplayRef = useRef({ text: "", time: 0, timer: null });
+
+  const warningDisplayRef = useRef({
+    text: "",
+    time: 0,
+    timer: null,
+  });
+
   const [direction, setDirection] = useState("none");
   const [serverOnline, setServerOnline] = useState(true);
   const [isMuted, setIsMuted] = useState(false);
@@ -117,6 +127,77 @@ export default function WorkoutSession() {
   });
 
   const speechTimerRef = useRef(null);
+  const speechUnlockedRef = useRef(false);
+  const speechVoicesRef = useRef([]);
+
+  const loadSpeechVoices = () => {
+    if (!("speechSynthesis" in window)) {
+      return [];
+    }
+
+    const voices = window.speechSynthesis.getVoices();
+
+    if (voices.length > 0) {
+      speechVoicesRef.current = voices;
+    }
+
+    return voices;
+  };
+
+  const unlockSpeech = () => {
+    if (!("speechSynthesis" in window)) {
+      return false;
+    }
+
+    try {
+      const synthesis = window.speechSynthesis;
+
+      synthesis.cancel();
+      synthesis.resume();
+
+      loadSpeechVoices();
+
+      const unlockUtterance = new SpeechSynthesisUtterance(" ");
+      unlockUtterance.volume = 0;
+      unlockUtterance.rate = 1;
+      unlockUtterance.pitch = 1;
+      unlockUtterance.lang = "en-US";
+
+      synthesis.speak(unlockUtterance);
+      synthesis.resume();
+
+      speechUnlockedRef.current = true;
+
+      return true;
+    } catch (error) {
+      console.error("Speech unlock error:", error);
+      return false;
+    }
+  };
+
+  useEffect(() => {
+    if (!("speechSynthesis" in window)) {
+      return undefined;
+    }
+
+    loadSpeechVoices();
+
+    const handleVoicesChanged = () => {
+      loadSpeechVoices();
+    };
+
+    window.speechSynthesis.addEventListener(
+      "voiceschanged",
+      handleVoicesChanged,
+    );
+
+    return () => {
+      window.speechSynthesis.removeEventListener(
+        "voiceschanged",
+        handleVoicesChanged,
+      );
+    };
+  }, []);
 
   useEffect(() => {
     axios
@@ -136,19 +217,18 @@ export default function WorkoutSession() {
 
   useEffect(() => {
     if (isMuted) return;
-    
+
     const msg = (warning || feedback || "").trim();
 
     if (BLOCKED_VOICE_MESSAGES.has(msg)) return;
-
     if (msg.length < MIN_MESSAGE_LENGTH) return;
-
     if (!isActiveRef.current) return;
 
     const now = Date.now();
     const lastSpoken = lastSpokenRef.current;
 
     const isSameMessage = msg === lastSpoken.text;
+
     const timeSinceLastSpeech = now - lastSpoken.time;
 
     const requiredCooldown = isSameMessage
@@ -167,6 +247,10 @@ export default function WorkoutSession() {
     const speakMessage = () => {
       if (isMuted || !isActiveRef.current) return;
 
+      if (!("speechSynthesis" in window)) {
+        return;
+      }
+
       const currentTime = Date.now();
 
       if (
@@ -176,21 +260,55 @@ export default function WorkoutSession() {
         return;
       }
 
-      window.speechSynthesis.cancel();
+      try {
+        const synthesis = window.speechSynthesis;
 
-      const utterance = new SpeechSynthesisUtterance(msg);
+        synthesis.cancel();
+        synthesis.resume();
 
-      utterance.rate = 1.0;
-      utterance.pitch = 1.0;
-      utterance.volume = 1.0;
-      utterance.lang = "en-US";
+        loadSpeechVoices();
 
-      window.speechSynthesis.speak(utterance);
+        const utterance = new SpeechSynthesisUtterance(msg);
 
-      lastSpokenRef.current = {
-        text: msg,
-        time: currentTime,
-      };
+        utterance.rate = 1.0;
+        utterance.pitch = 1.0;
+        utterance.volume = 1.0;
+        utterance.lang = "en-US";
+
+        const voices = speechVoicesRef.current;
+
+        const englishVoice =
+          voices.find(
+            (voice) =>
+              voice.lang?.toLowerCase() === "en-us" &&
+              voice.localService,
+          ) ||
+          voices.find((voice) =>
+            voice.lang?.toLowerCase().startsWith("en"),
+          );
+
+        if (englishVoice) {
+          utterance.voice = englishVoice;
+        }
+
+        utterance.onstart = () => {
+          speechUnlockedRef.current = true;
+        };
+
+        utterance.onerror = (error) => {
+          console.error("Speech synthesis error:", error);
+        };
+
+        synthesis.speak(utterance);
+        synthesis.resume();
+
+        lastSpokenRef.current = {
+          text: msg,
+          time: currentTime,
+        };
+      } catch (error) {
+        console.error("Voice feedback error:", error);
+      }
     };
 
     speechTimerRef.current = setTimeout(speakMessage, 150);
@@ -209,7 +327,9 @@ export default function WorkoutSession() {
       speechTimerRef.current = null;
     }
 
-    window.speechSynthesis.cancel();
+    if ("speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+    }
 
     lastSpokenRef.current = {
       text: "",
@@ -217,7 +337,12 @@ export default function WorkoutSession() {
     };
   };
 
-  const scheduleDisplayUpdate = (ref, setter, newText, isPriority) => {
+  const scheduleDisplayUpdate = (
+    ref,
+    setter,
+    newText,
+    isPriority,
+  ) => {
     if (newText === ref.current.text) return;
 
     const now = Date.now();
@@ -259,7 +384,6 @@ export default function WorkoutSession() {
 
   const sendNextFrame = async () => {
     if (!isActiveRef.current) return;
-
     if (processingFrameRef.current) return;
 
     const video = videoRef.current;
@@ -300,8 +424,11 @@ export default function WorkoutSession() {
       if (isActiveRef.current && res.data) {
         const newFeedback = res.data.feedback || "Ready";
         const newWarning = res.data.warning || "";
+
         const isRepEvent = newFeedback.toLowerCase().includes("counted");
+
         const backendProgress = res.data.progress_percent;
+
         const fallbackProgress = Math.min(
           100,
           Math.round((Math.abs(res.data.angle ?? 0) / 90) * 100),
@@ -309,11 +436,16 @@ export default function WorkoutSession() {
 
         setReps(res.data.reps ?? 0);
         setAngle(res.data.angle ?? 0.0);
+
         setProgress(
-          backendProgress !== undefined ? backendProgress : fallbackProgress,
+          backendProgress !== undefined
+            ? backendProgress
+            : fallbackProgress,
         );
+
         setFeedback(newFeedback);
         setWarning(newWarning);
+
         setDirection(res.data.direction || "none");
 
         scheduleDisplayUpdate(
@@ -322,6 +454,7 @@ export default function WorkoutSession() {
           newFeedback,
           isRepEvent,
         );
+
         scheduleDisplayUpdate(
           warningDisplayRef,
           setDisplayWarning,
@@ -367,7 +500,6 @@ export default function WorkoutSession() {
 
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => track.stop());
-
       streamRef.current = null;
     }
 
@@ -405,11 +537,14 @@ export default function WorkoutSession() {
 
   const handleStart = async () => {
     if (!hasPermission) {
+      unlockSpeech();
       await requestCamera();
       return;
     }
 
     if (isActiveRef.current) return;
+
+    unlockSpeech();
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -423,7 +558,6 @@ export default function WorkoutSession() {
 
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-
         await videoRef.current.play();
       }
 
@@ -439,26 +573,35 @@ export default function WorkoutSession() {
       setPersonDetected(false);
       setProcessedImage(null);
       setServerOnline(true);
-
       setReps(0);
       setAngle(0.0);
       setProgress(0);
+
       setFeedback("Position yourself in front of the camera");
       setWarning("");
+
       setDirection("none");
 
       if (feedbackDisplayRef.current.timer) {
         clearTimeout(feedbackDisplayRef.current.timer);
       }
+
       if (warningDisplayRef.current.timer) {
         clearTimeout(warningDisplayRef.current.timer);
       }
+
       feedbackDisplayRef.current = {
         text: "Position yourself in front of the camera",
         time: Date.now(),
         timer: null,
       };
-      warningDisplayRef.current = { text: "", time: Date.now(), timer: null };
+
+      warningDisplayRef.current = {
+        text: "",
+        time: Date.now(),
+        timer: null,
+      };
+
       setDisplayFeedback("Position yourself in front of the camera");
       setDisplayWarning("");
 
@@ -487,7 +630,6 @@ export default function WorkoutSession() {
 
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((track) => track.stop());
-
         streamRef.current = null;
       }
 
@@ -517,7 +659,6 @@ export default function WorkoutSession() {
 
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => track.stop());
-
       streamRef.current = null;
     }
 
@@ -543,15 +684,23 @@ export default function WorkoutSession() {
     if (feedbackDisplayRef.current.timer) {
       clearTimeout(feedbackDisplayRef.current.timer);
     }
+
     if (warningDisplayRef.current.timer) {
       clearTimeout(warningDisplayRef.current.timer);
     }
+
     feedbackDisplayRef.current = {
       text: "Session stopped",
       time: Date.now(),
       timer: null,
     };
-    warningDisplayRef.current = { text: "", time: Date.now(), timer: null };
+
+    warningDisplayRef.current = {
+      text: "",
+      time: Date.now(),
+      timer: null,
+    };
+
     setDisplayFeedback("Session stopped");
     setDisplayWarning("");
 
@@ -577,15 +726,23 @@ export default function WorkoutSession() {
       if (feedbackDisplayRef.current.timer) {
         clearTimeout(feedbackDisplayRef.current.timer);
       }
+
       if (warningDisplayRef.current.timer) {
         clearTimeout(warningDisplayRef.current.timer);
       }
+
       feedbackDisplayRef.current = {
         text: "Ready to start",
         time: Date.now(),
         timer: null,
       };
-      warningDisplayRef.current = { text: "", time: Date.now(), timer: null };
+
+      warningDisplayRef.current = {
+        text: "",
+        time: Date.now(),
+        timer: null,
+      };
+
       setDisplayFeedback("Ready to start");
       setDisplayWarning("");
 
@@ -595,9 +752,27 @@ export default function WorkoutSession() {
     }
   };
 
+  const handleVoiceToggle = () => {
+    const next = !isMuted;
+
+    if (!next) {
+      unlockSpeech();
+    }
+
+    setIsMuted(next);
+
+    if (next) {
+      stopSpeech();
+    }
+  };
+
   const absAngle = Math.abs(angle);
-  
-  const percentage = Math.min(100, Math.max(0, Math.round(progress)));
+
+  const percentage = Math.min(
+    100,
+    Math.max(0, Math.round(progress)),
+  );
+
   const isPerfect = percentage >= 100 && !warning;
 
   if (!hasPermission) {
@@ -670,22 +845,18 @@ export default function WorkoutSession() {
 
             <div className="flex flex-wrap items-center gap-3">
               <button
-                onClick={() => {
-                  const next = !isMuted;
-
-                  setIsMuted(next);
-
-                  if (next) {
-                    stopSpeech();
-                  }
-                }}
+                onClick={handleVoiceToggle}
                 className={`flex items-center gap-2 rounded-btn border px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all ${
                   isMuted
                     ? "border-rose-200 bg-rose-50 text-rose-600"
                     : "border-brand-light bg-brand-light/30 text-brand-dark"
                 }`}
               >
-                {isMuted ? <VolumeX size={15} /> : <Volume2 size={15} />}
+                {isMuted ? (
+                  <VolumeX size={15} />
+                ) : (
+                  <Volume2 size={15} />
+                )}
 
                 <span>{isMuted ? "Muted" : "Voice On"}</span>
               </button>
@@ -824,7 +995,9 @@ export default function WorkoutSession() {
                       strokeWidth="8"
                       fill="transparent"
                       strokeDasharray={251.2}
-                      strokeDashoffset={251.2 - (251.2 * percentage) / 100}
+                      strokeDashoffset={
+                        251.2 - (251.2 * percentage) / 100
+                      }
                       strokeLinecap="round"
                       className="transition-all duration-300"
                     />
@@ -837,7 +1010,9 @@ export default function WorkoutSession() {
 
                     <span
                       className={`text-[9px] font-bold uppercase ${
-                        isPerfect ? "text-brand-dark" : "text-gray-400"
+                        isPerfect
+                          ? "text-brand-dark"
+                          : "text-gray-400"
                       }`}
                     >
                       {isPerfect
@@ -858,7 +1033,9 @@ export default function WorkoutSession() {
                   ) : isActive && !personDetected ? (
                     <div className="flex items-center justify-center gap-2 rounded-btn border border-accent-orange bg-accent-orange/40 p-3 text-xs font-bold text-accent-orange-dark">
                       <AlertTriangle size={15} />
-                      <span>Position yourself in front of camera</span>
+                      <span>
+                        Position yourself in front of camera
+                      </span>
                     </div>
                   ) : direction !== "none" || isPerfect ? (
                     <div className="flex items-center justify-center gap-2 rounded-btn border border-brand-light bg-brand-light/30 p-3 text-xs font-bold text-brand-dark">
