@@ -88,7 +88,10 @@ const processBookingReminders = async () => {
     })
       .populate("user", "firstName lastName email")
       .populate("professional", "firstName lastName email");
-
+console.log(
+  "REMINDER CHECK - COMPLETED PAYMENTS FOUND:",
+  payments.length
+);
     for (const payment of payments) {
       try {
         const appointmentStart = parseAppointmentStart(
