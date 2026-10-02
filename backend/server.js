@@ -14,7 +14,9 @@ const userRoutes = require("./routes/user/userRoutes");
 const googleRoutes = require("./routes/google/googleRoutes");
 
 const { stripeWebhook } = require("./controllers/payment/paymentController");
-const { startBookingReminderScheduler } = require("./services/bookingReminderService");
+const {
+  startBookingReminderScheduler,
+} = require("./services/bookingReminderService");
 const ConnectToDB = require("./models/db");
 
 const app = express();
@@ -73,4 +75,8 @@ const startServer = async () => {
   }
 };
 
-startServer();
+if (require.main === module) {
+  startServer();
+}
+
+module.exports = app;
