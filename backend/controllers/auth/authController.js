@@ -317,9 +317,9 @@ const forgotPassword = async (req, res) => {
 
     await isExisted.save();
 
-    const resetLink = `http://localhost:5173/reset-password?token=${encodeURIComponent(
-      resetPasswordToken,
-    )}`;
+   const resetLink = `https://posefit-web.vercel.app/reset-password?token=${encodeURIComponent(
+  resetPasswordToken,
+)}`;
 
     await transporter.sendMail({
       from: `"PoseFit" <${process.env.EMAIL_USER}>`,
