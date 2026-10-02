@@ -253,9 +253,13 @@ const forgotPassword = async (req, res) => {
 
     await isExisted.save();
 
-    const resetLink = `http://localhost:5173/reset-password?token=${encodeURIComponent(
-      resetPasswordToken,
-    )}`;
+    const frontendUrl = (
+  process.env.FRONTEND_URL || "http://localhost:5173"
+).replace(/\/$/, "");
+
+const resetLink = `${frontendUrl}/reset-password?token=${encodeURIComponent(
+  resetPasswordToken,
+)}`;
 
     await transporter.sendMail({
       from: `"PoseFit" <${process.env.EMAIL_USER}>`,
