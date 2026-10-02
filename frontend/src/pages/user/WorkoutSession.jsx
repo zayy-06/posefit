@@ -56,7 +56,7 @@ const BLOCKED_VOICE_MESSAGES = new Set([
 ]);
 
 const POSE_API_URL = (import.meta.env.VITE_POSE_API_URL || "").replace(
-  /\/$/,
+  /\/+$/,
   "",
 );
 
@@ -64,6 +64,14 @@ const SAME_MESSAGE_COOLDOWN = 4000;
 const DIFFERENT_MESSAGE_COOLDOWN = 2500;
 const MIN_MESSAGE_LENGTH = 3;
 const FEEDBACK_DISPLAY_MIN_GAP = 900;
+
+// Lower processing frequency to reduce Railway/Python CPU load.
+const FRAME_INTERVAL = 120;
+
+// Send smaller frames to the Python pose service.
+const PROCESSING_WIDTH = 320;
+const PROCESSING_HEIGHT = 240;
+const JPEG_QUALITY = 0.5;
 
 export default function WorkoutSession() {
   const { exerciseId } = useParams();
@@ -86,6 +94,7 @@ export default function WorkoutSession() {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const streamRef = useRef(null);
+
   const isActiveRef = useRef(false);
   const frameTimerRef = useRef(null);
   const processingFrameRef = useRef(false);
@@ -96,11 +105,14 @@ export default function WorkoutSession() {
 
   const [isActive, setIsActive] = useState(false);
   const [processedImage, setProcessedImage] = useState(null);
+
   const [reps, setReps] = useState(0);
   const [angle, setAngle] = useState(0.0);
   const [progress, setProgress] = useState(0);
+
   const [feedback, setFeedback] = useState("Ready to start");
   const [warning, setWarning] = useState("");
+
   const [displayFeedback, setDisplayFeedback] = useState("Ready to start");
   const [displayWarning, setDisplayWarning] = useState("");
 
@@ -228,7 +240,6 @@ export default function WorkoutSession() {
     const lastSpoken = lastSpokenRef.current;
 
     const isSameMessage = msg === lastSpoken.text;
-
     const timeSinceLastSpeech = now - lastSpoken.time;
 
     const requiredCooldown = isSameMessage
@@ -379,7 +390,7 @@ export default function WorkoutSession() {
 
     frameTimerRef.current = setTimeout(() => {
       sendNextFrame();
-    }, 50);
+    }, FRAME_INTERVAL);
   };
 
   const sendNextFrame = async () => {
@@ -397,13 +408,10 @@ export default function WorkoutSession() {
     processingFrameRef.current = true;
 
     try {
-      const width = video.videoWidth || 640;
-      const height = video.videoHeight || 480;
-
-      canvas.width = width;
-      canvas.height = height;
-
-      const ctx = canvas.getContext("2d");
+      const ctx = canvas.getContext("2d", {
+        alpha: false,
+        willReadFrequently: false,
+      });
 
       if (!ctx) {
         processingFrameRef.current = false;
@@ -411,27 +419,46 @@ export default function WorkoutSession() {
         return;
       }
 
-      ctx.drawImage(video, 0, 0, width, height);
+      canvas.width = PROCESSING_WIDTH;
+      canvas.height = PROCESSING_HEIGHT;
 
-      const base64Image = canvas.toDataURL("image/jpeg", 0.6);
+      ctx.drawImage(
+        video,
+        0,
+        0,
+        PROCESSING_WIDTH,
+        PROCESSING_HEIGHT,
+      );
 
-      const res = await axios.post(`${POSE_API_URL}/process_frame`, {
-        session_id: sessionIdRef.current,
-        exercise: exerciseId,
-        image: base64Image,
-      });
+      const base64Image = canvas.toDataURL(
+        "image/jpeg",
+        JPEG_QUALITY,
+      );
+
+      const res = await axios.post(
+        `${POSE_API_URL}/process_frame`,
+        {
+          session_id: sessionIdRef.current,
+          exercise: exerciseId,
+          image: base64Image,
+        },
+      );
 
       if (isActiveRef.current && res.data) {
         const newFeedback = res.data.feedback || "Ready";
         const newWarning = res.data.warning || "";
 
-        const isRepEvent = newFeedback.toLowerCase().includes("counted");
+        const isRepEvent = newFeedback
+          .toLowerCase()
+          .includes("counted");
 
         const backendProgress = res.data.progress_percent;
 
         const fallbackProgress = Math.min(
           100,
-          Math.round((Math.abs(res.data.angle ?? 0) / 90) * 100),
+          Math.round(
+            (Math.abs(res.data.angle ?? 0) / 90) * 100,
+          ),
         );
 
         setReps(res.data.reps ?? 0);
@@ -462,7 +489,9 @@ export default function WorkoutSession() {
           isRepEvent,
         );
 
-        setPersonDetected(res.data.person_detected ?? false);
+        setPersonDetected(
+          res.data.person_detected ?? false,
+        );
 
         if (res.data.image) {
           setProcessedImage(res.data.image);
@@ -527,11 +556,16 @@ export default function WorkoutSession() {
 
       setHasPermission(true);
 
-      localStorage.setItem("posefit_cam_permission", "granted");
+      localStorage.setItem(
+        "posefit_cam_permission",
+        "granted",
+      );
 
       toast.success("Camera permitted!");
     } catch {
-      toast.error("Camera permission denied in browser settings.");
+      toast.error(
+        "Camera permission denied in browser settings.",
+      );
     }
   };
 
@@ -544,6 +578,7 @@ export default function WorkoutSession() {
 
     if (isActiveRef.current) return;
 
+    // Unlock browser speech from the direct Start button gesture.
     unlockSpeech();
 
     try {
@@ -572,14 +607,18 @@ export default function WorkoutSession() {
       setIsActive(true);
       setPersonDetected(false);
       setProcessedImage(null);
+
       setServerOnline(true);
+
       setReps(0);
       setAngle(0.0);
       setProgress(0);
 
-      setFeedback("Position yourself in front of the camera");
-      setWarning("");
+      setFeedback(
+        "Position yourself in front of the camera",
+      );
 
+      setWarning("");
       setDirection("none");
 
       if (feedbackDisplayRef.current.timer) {
@@ -602,7 +641,10 @@ export default function WorkoutSession() {
         timer: null,
       };
 
-      setDisplayFeedback("Position yourself in front of the camera");
+      setDisplayFeedback(
+        "Position yourself in front of the camera",
+      );
+
       setDisplayWarning("");
 
       lastSpokenRef.current = {
@@ -610,7 +652,9 @@ export default function WorkoutSession() {
         time: 0,
       };
 
-      toast.success(`${currentEx.name} tracking started.`);
+      toast.success(
+        `${currentEx.name} tracking started.`,
+      );
 
       scheduleNextFrame();
     } catch (err) {
@@ -641,7 +685,9 @@ export default function WorkoutSession() {
         setServerOnline(false);
         toast.error("Python pose service is offline.");
       } else {
-        toast.error("Could not access camera in browser.");
+        toast.error(
+          "Could not access camera in browser.",
+        );
       }
     }
   };
@@ -718,6 +764,7 @@ export default function WorkoutSession() {
       setReps(0);
       setAngle(0.0);
       setProgress(0);
+
       setFeedback("Ready to start");
       setWarning("");
       setDirection("none");
@@ -901,11 +948,16 @@ export default function WorkoutSession() {
                 muted
                 autoPlay
                 className={`aspect-video h-full w-full object-cover ${
-                  isActive && !processedImage ? "block" : "hidden"
+                  isActive && !processedImage
+                    ? "block"
+                    : "hidden"
                 }`}
               />
 
-              <canvas ref={canvasRef} className="hidden" />
+              <canvas
+                ref={canvasRef}
+                className="hidden"
+              />
 
               {isActive ? (
                 <>
@@ -942,7 +994,7 @@ export default function WorkoutSession() {
                   <button
                     onClick={handleStart}
                     disabled={!serverOnline}
-                    className="btn-primary flex items-center gap-2 py-3 px-8 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="btn-primary flex items-center gap-2 px-8 py-3 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <Play size={14} />
                     Start Detection
@@ -991,12 +1043,15 @@ export default function WorkoutSession() {
                       cx="50"
                       cy="50"
                       r="40"
-                      stroke={warning ? "#ef4444" : "#16845b"}
+                      stroke={
+                        warning ? "#ef4444" : "#16845b"
+                      }
                       strokeWidth="8"
                       fill="transparent"
                       strokeDasharray={251.2}
                       strokeDashoffset={
-                        251.2 - (251.2 * percentage) / 100
+                        251.2 -
+                        (251.2 * percentage) / 100
                       }
                       strokeLinecap="round"
                       className="transition-all duration-300"
