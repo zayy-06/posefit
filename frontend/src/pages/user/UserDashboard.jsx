@@ -431,7 +431,7 @@ export default function UserDashboard() {
               </div>
 
               <p className="text-4xl font-extrabold text-gray-800">
-                {metrics?.bmi ?? "--"}
+                {metrics?.bmiValue ?? "--"}
               </p>
 
               <p className="text-sm text-gray-500 mt-2">
