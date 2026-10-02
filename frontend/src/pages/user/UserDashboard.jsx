@@ -340,13 +340,6 @@ export default function UserDashboard() {
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
-  <div className="h-2 w-2 rounded-full bg-brand animate-pulse" />
-
-  <span className="text-sm font-medium text-gray-600">
-    Metrics Available
-  </span>
-</div>
         </section>
 
         <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
