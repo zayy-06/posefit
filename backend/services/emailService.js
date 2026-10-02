@@ -345,12 +345,19 @@ const sendBookingReminderEmails = async ({
     `,
   };
 
+  try {
   await Promise.all([
     transporter.sendMail(userMail),
     transporter.sendMail(professionalMail),
   ]);
 
+  console.log("Booking confirmation emails sent successfully");
+
   return true;
+} catch (error) {
+  console.error("Booking confirmation email error:", error);
+  throw error;
+}
 };
 
 module.exports = {
