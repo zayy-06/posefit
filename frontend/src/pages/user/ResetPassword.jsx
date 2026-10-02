@@ -38,9 +38,6 @@ const ResetPassword = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  // Secure password reset token from URL
-  // Example:
-  // /reset-password?token=abc123...
   const token = searchParams.get("token");
 
   const [password, setPassword] = useState("");
@@ -50,10 +47,6 @@ const ResetPassword = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [loading, setLoading] = useState(false);
-
-  // =====================================================
-  // CHECK RESET LINK
-  // =====================================================
 
   useEffect(() => {
     if (!token || !token.trim()) {
@@ -65,20 +58,12 @@ const ResetPassword = () => {
     }
   }, [token, navigate]);
 
-  // =====================================================
-  // SUBMIT
-  // =====================================================
-
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     const cleanToken = token?.trim();
     const cleanPassword = password.trim();
     const cleanConfirmPassword = confirmPassword.trim();
-
-    // =====================================================
-    // TOKEN
-    // =====================================================
 
     if (!cleanToken) {
       toast.error("Invalid or missing password reset link.");
@@ -102,18 +87,11 @@ const ResetPassword = () => {
     setLoading(true);
 
     try {
-      // =====================================================
-      // RESET PASSWORD
-      // =====================================================
-
+      
       const { data } = await httpClient.put("/auth/reset-password", {
         token: cleanToken,
         password: cleanPassword,
       });
-
-      // =====================================================
-      // SUCCESS
-      // =====================================================
 
       toast.success(data?.message || "Password reset successfully.");
 
@@ -144,23 +122,13 @@ const ResetPassword = () => {
     }
   };
 
-  // =====================================================
-  // IMPORTANT
-  // =====================================================
-
   if (!token || !token.trim()) {
     return null;
   }
 
-  // =====================================================
-  // UI
-  // =====================================================
-
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-surface px-4 py-8 font-sans">
-      {/* =================================================
-          BACKGROUND DECORATIONS
-      ================================================= */}
+     
 
       <div className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-brand-light/50 blur-3xl" />
 
@@ -168,15 +136,10 @@ const ResetPassword = () => {
 
       <div className="pointer-events-none absolute left-1/2 top-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent-orange/20 blur-3xl" />
 
-      {/* =================================================
-          RESET PASSWORD CARD
-      ================================================= */}
 
       <div className="relative z-10 w-full max-w-md">
         <div className="rounded-card border border-brand-light/70 bg-surface/80 p-8 shadow-card-hover backdrop-blur-xl sm:p-10">
-          {/* =================================================
-              LOGO
-          ================================================= */}
+       
 
           <div className="mb-7 flex justify-center">
             <Link
@@ -191,9 +154,6 @@ const ResetPassword = () => {
             </Link>
           </div>
 
-          {/* =================================================
-              HEADING
-          ================================================= */}
 
           <div className="mb-8 text-center">
             <h1 className="text-3xl font-extrabold tracking-tight text-gray-800">
@@ -205,14 +165,9 @@ const ResetPassword = () => {
             </p>
           </div>
 
-          {/* =================================================
-              FORM
-          ================================================= */}
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* =================================================
-                NEW PASSWORD
-            ================================================= */}
+           
 
             <div>
               <label
@@ -253,9 +208,6 @@ const ResetPassword = () => {
               </p>
             </div>
 
-            {/* =================================================
-                CONFIRM PASSWORD
-            ================================================= */}
 
             <div>
               <label
@@ -293,9 +245,6 @@ const ResetPassword = () => {
               </div>
             </div>
 
-            {/* =================================================
-                RESET BUTTON
-            ================================================= */}
 
             <button
               type="submit"
@@ -313,9 +262,6 @@ const ResetPassword = () => {
             </button>
           </form>
 
-          {/* =================================================
-              LOGIN LINK
-          ================================================= */}
 
           <div className="mt-7 text-center text-sm text-gray-500">
             Remember your password?{" "}
@@ -328,9 +274,6 @@ const ResetPassword = () => {
           </div>
         </div>
 
-        {/* ===================================================
-            BOTTOM TEXT
-        =================================================== */}
 
         <p className="mt-5 text-center text-xs text-gray-400">
           Your fitness journey starts with PoseFit.
