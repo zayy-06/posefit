@@ -149,20 +149,6 @@ const UserSchema = new Schema({
     trim: true,
   },
 
-  // verificationMeetingLink: {
-  //   type: String,
-  //   trim: true,
-  // },
-
-  // verificationMeetingTime: {
-  //   type: Date,
-  // },
-
-  // verificationNotes: {
-  //   type: String,
-  //   trim: true,
-  // },
-
   appliedAt: {
     type: Date,
     default: function () {
@@ -224,9 +210,6 @@ UserSchema.pre("save", function () {
 
     this.professionalStatus = undefined;
     this.rejectionReason = undefined;
-    this.verificationMeetingLink = undefined;
-    this.verificationMeetingTime = undefined;
-    this.verificationNotes = undefined;
     this.appliedAt = undefined;
 
     this.stripeAccountId = undefined;
