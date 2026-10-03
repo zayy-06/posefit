@@ -1,7 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-
 import { useParams, useNavigate } from "react-router-dom";
-
 import {
   Play,
   Square,
@@ -15,13 +13,9 @@ import {
   ArrowLeft,
   Camera,
 } from "lucide-react";
-
 import { toast } from "sonner";
-
 import axios from "axios";
-
 import UserLayout from "../../components/user/UserLayout";
-
 import squatImage from "../../assets/squate.png";
 import plankImage from "../../assets/plank.png";
 import armRaiseImage from "../../assets/arm_raise.png";
@@ -56,7 +50,7 @@ const BLOCKED_VOICE_MESSAGES = new Set([
 ]);
 
 const POSE_API_URL = (import.meta.env.VITE_POSE_API_URL || "").replace(
-  /\/+$/,
+  /\/$/,
   "",
 );
 
@@ -149,7 +143,6 @@ export default function WorkoutSession() {
 
       synthesis.cancel();
       synthesis.resume();
-
       loadSpeechVoices();
 
       const unlockUtterance = new SpeechSynthesisUtterance(" ");
@@ -219,7 +212,6 @@ export default function WorkoutSession() {
 
     const now = Date.now();
     const lastSpoken = lastSpokenRef.current;
-
     const isSameMessage = msg === lastSpoken.text;
     const timeSinceLastSpeech = now - lastSpoken.time;
 
@@ -257,7 +249,6 @@ export default function WorkoutSession() {
 
         synthesis.cancel();
         synthesis.resume();
-
         loadSpeechVoices();
 
         const utterance = new SpeechSynthesisUtterance(msg);
@@ -274,9 +265,7 @@ export default function WorkoutSession() {
             (voice) =>
               voice.lang?.toLowerCase() === "en-us" && voice.localService,
           ) ||
-          voices.find((voice) =>
-            voice.lang?.toLowerCase().startsWith("en"),
-          );
+          voices.find((voice) => voice.lang?.toLowerCase().startsWith("en"));
 
         if (englishVoice) {
           utterance.voice = englishVoice;
@@ -328,12 +317,7 @@ export default function WorkoutSession() {
     };
   };
 
-  const scheduleDisplayUpdate = (
-    ref,
-    setter,
-    newText,
-    isPriority,
-  ) => {
+  const scheduleDisplayUpdate = (ref, setter, newText, isPriority) => {
     if (newText === ref.current.text) return;
 
     const now = Date.now();
@@ -386,11 +370,9 @@ export default function WorkoutSession() {
     }
 
     processingFrameRef.current = true;
-
     try {
       const width = 480;
       const height = 360;
-
       canvas.width = width;
       canvas.height = height;
 
@@ -402,36 +384,7 @@ export default function WorkoutSession() {
         return;
       }
 
-      const sourceWidth = video.videoWidth || width;
-      const sourceHeight = video.videoHeight || height;
-
-      const sourceAspect = sourceWidth / sourceHeight;
-      const targetAspect = width / height;
-
-      let sx = 0;
-      let sy = 0;
-      let sw = sourceWidth;
-      let sh = sourceHeight;
-
-      if (sourceAspect > targetAspect) {
-        sw = sourceHeight * targetAspect;
-        sx = (sourceWidth - sw) / 2;
-      } else if (sourceAspect < targetAspect) {
-        sh = sourceWidth / targetAspect;
-        sy = (sourceHeight - sh) / 2;
-      }
-
-      ctx.drawImage(
-        video,
-        sx,
-        sy,
-        sw,
-        sh,
-        0,
-        0,
-        width,
-        height,
-      );
+      ctx.drawImage(video, 0, 0, width, height);
 
       const base64Image = canvas.toDataURL("image/jpeg", 0.5);
 
@@ -458,9 +411,7 @@ export default function WorkoutSession() {
         setAngle(res.data.angle ?? 0.0);
 
         setProgress(
-          backendProgress !== undefined
-            ? backendProgress
-            : fallbackProgress,
+          backendProgress !== undefined ? backendProgress : fallbackProgress,
         );
 
         setFeedback(newFeedback);
@@ -537,15 +488,8 @@ export default function WorkoutSession() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
-          width: {
-            ideal: 640,
-          },
-          height: {
-            ideal: 480,
-          },
-          aspectRatio: {
-            ideal: 4 / 3,
-          },
+          width: 640,
+          height: 480,
         },
       });
 
@@ -575,15 +519,8 @@ export default function WorkoutSession() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
-          width: {
-            ideal: 640,
-          },
-          height: {
-            ideal: 480,
-          },
-          aspectRatio: {
-            ideal: 4 / 3,
-          },
+          width: 640,
+          height: 480,
         },
       });
 
@@ -634,6 +571,7 @@ export default function WorkoutSession() {
       };
 
       setDisplayFeedback("Position yourself in front of the camera");
+
       setDisplayWarning("");
 
       lastSpokenRef.current = {
@@ -798,6 +736,7 @@ export default function WorkoutSession() {
 
   const absAngle = Math.abs(angle);
   const percentage = Math.min(100, Math.max(0, Math.round(progress)));
+
   const isPerfect = percentage >= 100 && !warning;
 
   if (!hasPermission) {
@@ -1017,9 +956,7 @@ export default function WorkoutSession() {
                         strokeWidth="8"
                         fill="transparent"
                         strokeDasharray={251.2}
-                        strokeDashoffset={
-                          251.2 - (251.2 * percentage) / 100
-                        }
+                        strokeDashoffset={251.2 - (251.2 * percentage) / 100}
                         strokeLinecap="round"
                         className="transition-all duration-300"
                       />
@@ -1032,9 +969,7 @@ export default function WorkoutSession() {
 
                       <span
                         className={`text-[8px] font-bold uppercase lg:text-[9px] ${
-                          isPerfect
-                            ? "text-brand-dark"
-                            : "text-gray-400"
+                          isPerfect ? "text-brand-dark" : "text-gray-400"
                         }`}
                       >
                         {isPerfect
@@ -1055,9 +990,7 @@ export default function WorkoutSession() {
                     ) : isActive && !personDetected ? (
                       <div className="flex items-center justify-center gap-1 rounded-btn border border-accent-orange bg-accent-orange/40 p-2 text-[10px] font-bold text-accent-orange-dark lg:gap-2 lg:p-3 lg:text-xs">
                         <AlertTriangle size={13} />
-                        <span>
-                          Position yourself in front of camera
-                        </span>
+                        <span>Position yourself in front of camera</span>
                       </div>
                     ) : direction !== "none" || isPerfect ? (
                       <div className="flex items-center justify-center gap-1 rounded-btn border border-brand-light bg-brand-light/30 p-2 text-[10px] font-bold text-brand-dark lg:gap-2 lg:p-3 lg:text-xs">
