@@ -12,7 +12,9 @@ const {
   sendBookingConfirmationEmails,
 
 } = require("../../services/emailService");
-
+const {
+  processBookingReminders,
+} = require("../../services/bookingReminderService");
 const getStripe = () => {
   const secretKey = process.env.STRIPE_SECRET_KEY;
   if (!secretKey) {
@@ -1653,6 +1655,44 @@ const verifySession = async (req, res) => {
     });
   }
 };
+const sendBookingReminders = async (req, res) => {
+  try {
+    const cronSecret = process.env.CRON_SECRET;
+
+    if (!cronSecret) {
+      console.error("CRON_SECRET is not configured.");
+
+      return res.status(500).json({
+        success: false,
+        message: "Cron secret is not configured.",
+      });
+    }
+
+    const providedSecret = req.headers["x-cron-secret"];
+
+    if (!providedSecret || providedSecret !== cronSecret) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized.",
+      });
+    }
+
+    await processBookingReminders();
+
+    return res.status(200).json({
+      success: true,
+      message: "Booking reminders processed successfully.",
+    });
+  } catch (error) {
+    console.error("Booking reminder controller error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to process booking reminders.",
+      error: error.message,
+    });
+  }
+};
 
 module.exports = {
   createPayment,
@@ -1668,4 +1708,5 @@ module.exports = {
   stripeWebhook,
   cancelPayment,
   verifySession,
+  sendBookingReminders,
 };
