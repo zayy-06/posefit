@@ -349,7 +349,7 @@ const forgotPassword = async (req, res) => {
 
     await isExisted.save();
 
-   const resetLink = `https://posefit-web.vercel.app/reset-password?token=${encodeURIComponent(
+ const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${encodeURIComponent(
   resetPasswordToken,
 )}`;
 
